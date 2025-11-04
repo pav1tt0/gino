@@ -9,14 +9,13 @@ import { fetchMaterialsFromSupabase } from './supabaseClient';
 import logo from './Logo-sustain.png';
 import toast, { Toaster } from 'react-hot-toast';
 import Papa from 'papaparse';
-
-// Import components
 import Header from './components/common/Header';
 import Navigation from './components/common/Navigation';
 import ConfirmModal from './components/modals/ConfirmModal';
 import DataPreviewModal from './components/modals/DataPreviewModal';
 import Dashboard from './components/views/Dashboard';
 import MaterialsDatabase from './components/views/MaterialsDatabase';
+import DownloadApp from './components/views/DownloadApp';
 
 // Chart Export Buttons Component
 const ChartExportButtons = ({ chartRef, chartId, filename }) => {
@@ -971,36 +970,36 @@ const SustainableMaterialsApp = () => {
         )}
 
         {activeTab === 'methodology' && (
-          <div className="max-w-4xl mx-auto">
-            <div className="bg-white rounded-xl shadow-lg p-8">
-              <div className="prose prose-green max-w-none">
-                <ReactMarkdown
-                  remarkPlugins={[remarkGfm]}
-                  components={{
-                    h1: ({node, ...props}) => <h1 className="text-4xl font-extrabold text-gray-900 mb-6 pb-3 border-b-4 border-green-600" {...props} />,
-                    h2: ({node, ...props}) => <h2 className="text-3xl font-bold text-gray-900 mt-12 mb-4" {...props} />,
-                    h3: ({node, ...props}) => <h3 className="text-2xl font-semibold text-gray-700 mt-8 mb-3" {...props} />,
-                    h4: ({node, ...props}) => <h4 className="text-xl font-semibold text-gray-600 mt-6 mb-2" {...props} />,
-                    p: ({node, ...props}) => <p className="text-base text-gray-700 mb-5 leading-relaxed" {...props} />,
-                    ul: ({node, ...props}) => <ul className="list-disc ml-6 mb-5 space-y-2" {...props} />,
-                    ol: ({node, ...props}) => <ol className="list-decimal ml-6 mb-5 space-y-2" {...props} />,
-                    li: ({node, ...props}) => <li className="text-gray-700 leading-relaxed" {...props} />,
-                    strong: ({node, ...props}) => <strong className="font-bold text-gray-900" {...props} />,
-                    em: ({node, ...props}) => <em className="italic text-gray-600" {...props} />,
-                    code: ({node, inline, ...props}) =>
-                      inline
-                        ? <code className="bg-gray-100 text-green-600 px-2 py-1 rounded text-sm font-mono" {...props} />
-                        : <code className="block bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto my-5 text-sm font-mono" {...props} />,
-                    hr: ({node, ...props}) => <hr className="border-0 border-t-2 border-gray-300 my-10" {...props} />,
-                    a: ({node, ...props}) => <a className="text-green-600 underline font-medium hover:text-green-700" {...props} />,
-                  }}
+          <div className="w-full">
+            <div className="bg-white rounded-xl shadow-lg p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-bold text-gray-900">Methodology</h2>
+                <a
+                  href="/Methodology.pdf"
+                  download
+                  className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
                 >
-                  {methodologyContent}
-                </ReactMarkdown>
+                  <Download className="w-4 h-4" />
+                  <span>Download PDF</span>
+                </a>
+              </div>
+              <div className="space-y-4">
+                {[1, 2, 3, 4, 5, 6, 7].map((pageNum) => (
+                  <div key={pageNum} className="border border-gray-200 rounded-lg overflow-hidden shadow-sm">
+                    <img
+                      src={`/Page${pageNum}.png`}
+                      alt={`Methodology Page ${pageNum}`}
+                      className="w-full h-auto"
+                      loading="lazy"
+                    />
+                  </div>
+                ))}
               </div>
             </div>
           </div>
         )}
+
+        {activeTab === 'download' && <DownloadApp />}
 
         {activeTab === 'analytics' && (
           <div className="space-y-6">

@@ -1,5 +1,5 @@
 import React from 'react';
-import { BarChart3, Database, TrendingUp, PieChart, BookOpen, MessageSquare } from 'lucide-react';
+import { BarChart3, Database, TrendingUp, PieChart, BookOpen, Download, MessageSquare } from 'lucide-react';
 
 const Navigation = ({ activeTab, setActiveTab }) => {
   const handleAIAssistantClick = async () => {
@@ -50,6 +50,15 @@ const Navigation = ({ activeTab, setActiveTab }) => {
           >
             <BookOpen className="w-4 h-4 flex-shrink-0" />
             <span className="hidden sm:inline">Methodology</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('download')}
+            className={`flex items-center space-x-1 sm:space-x-2 px-2 sm:px-3 py-3 sm:py-4 text-xs sm:text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+              activeTab === 'download' ? 'border-green-500 text-green-600' : 'border-transparent text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            <Download className="w-4 h-4 flex-shrink-0" />
+            <span className="hidden sm:inline">Download App</span>
           </button>
           <button
             onClick={handleAIAssistantClick}

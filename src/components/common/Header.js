@@ -1,5 +1,5 @@
 import React from 'react';
-import { Upload, Database, Download } from 'lucide-react';
+import { Upload, Database } from 'lucide-react';
 import logo from '../../Logo-sustain.png';
 
 const Header = ({
@@ -24,20 +24,6 @@ const Header = ({
             </div>
           </div>
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-4">
-            {/* Download Desktop App Button - Only show in browser */}
-            {!isTauriApp && (
-              <a
-                href="https://github.com/alessiavittori/sustAId/releases"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center justify-center space-x-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm md:text-base"
-                title="Download desktop application"
-              >
-                <Download className="w-4 h-4" />
-                <span className="hidden sm:inline">Download App</span>
-                <span className="sm:hidden">Download</span>
-              </a>
-            )}
             <div className="relative">
               <input
                 type="file"
