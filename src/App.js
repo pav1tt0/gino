@@ -10,6 +10,11 @@ import logo from './Logo-sustain.png';
 import toast, { Toaster } from 'react-hot-toast';
 import Papa from 'papaparse';
 
+// Import components
+import Header from './components/common/Header';
+import Navigation from './components/common/Navigation';
+import ConfirmModal from './components/modals/ConfirmModal';
+
 // Chart Export Buttons Component
 const ChartExportButtons = ({ chartRef, chartId, filename }) => {
   const [isExporting, setIsExporting] = React.useState(false);
@@ -121,39 +126,6 @@ const ChartExportButtons = ({ chartRef, chartId, filename }) => {
 };
 
 // Confirm Dialog Modal Component
-const ConfirmModal = ({ message, onConfirm, onCancel }) => {
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
-        {/* Header */}
-        <div className="flex items-center space-x-3 mb-4">
-          <AlertCircle className="w-6 h-6 text-orange-500" />
-          <h2 className="text-xl font-bold text-gray-900">sustAId</h2>
-        </div>
-
-        {/* Message */}
-        <p className="text-gray-700 mb-6 whitespace-pre-line">{message}</p>
-
-        {/* Buttons */}
-        <div className="flex space-x-3 justify-end">
-          <button
-            onClick={onCancel}
-            className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors font-medium"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={onConfirm}
-            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium shadow-md"
-          >
-            OK
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
-
 // Missing Data Warning Component (Compact Version)
 const MissingDataWarning = ({ excludedMaterials }) => {
   if (!excludedMaterials || excludedMaterials.length === 0) return null;
@@ -1111,128 +1083,15 @@ const SustainableMaterialsApp = () => {
       )}
 
       {/* Header */}
-      <header className="bg-white shadow-lg border-b border-green-100">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col md:flex-row md:justify-between md:items-center py-4 gap-4">
-            <div className="flex items-center space-x-3 md:space-x-4">
-              <div className="p-1">
-                <img src={logo} alt="sustAId Logo" className="w-12 h-12 md:w-16 md:h-16 object-contain" />
-              </div>
-              <div>
-                <h1 className="text-xl md:text-3xl font-bold text-gray-900">
-                  sust<span style={{ color: '#517745', fontStyle: 'italic', fontSize: '1.2em' }} className="font-extrabold">AI</span>d
-                </h1>
-                <p className="text-xs md:text-base text-gray-600 hidden sm:block">AI-Powered Sustainable Material Selection</p>
-              </div>
-            </div>
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-4">
-              {/* Download Desktop App Button - Only show in browser */}
-              {!isTauriApp && (
-                <a
-                  href="https://github.com/alessiavittori/sustAId/releases"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center justify-center space-x-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm md:text-base"
-                  title="Download desktop application"
-                >
-                  <Download className="w-4 h-4" />
-                  <span className="hidden sm:inline">Download App</span>
-                  <span className="sm:hidden">Download</span>
-                </a>
-              )}
-              <div className="relative">
-                <input
-                  type="file"
-                  accept=".csv,.sql"
-                  onChange={handleFileUpload}
-                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                  id="file-upload"
-                />
-                <label
-                  htmlFor="file-upload"
-                  className="flex items-center justify-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 cursor-pointer transition-colors text-sm md:text-base"
-                >
-                  <Upload className="w-4 h-4" />
-                  <span className="hidden sm:inline">Upload CSV/SQL</span>
-                  <span className="sm:hidden">Upload Data</span>
-                </label>
-              </div>
-              <button
-                onClick={handleReloadSupabase}
-                disabled={supabaseMaterials.length === 0}
-                className={`flex items-center justify-center space-x-2 px-4 py-2 rounded-lg transition-colors text-sm md:text-base ${
-                  supabaseMaterials.length === 0
-                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                    : 'bg-green-600 text-white hover:bg-green-700'
-                }`}
-                title={supabaseMaterials.length === 0 ? 'No database loaded' : 'Reload original sustAId database'}
-              >
-                <Database className="w-4 h-4" />
-                <span className="hidden sm:inline">Reload sustAId database</span>
-                <span className="sm:hidden">Reload DB</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      </header>
+      <Header
+        isTauriApp={isTauriApp}
+        handleFileUpload={handleFileUpload}
+        handleReloadSupabase={handleReloadSupabase}
+        supabaseMaterials={supabaseMaterials}
+      />
 
       {/* Navigation */}
-      <nav className="bg-white border-b border-gray-200 overflow-x-auto">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex space-x-2 sm:space-x-8 min-w-max">
-            {[
-              { id: 'dashboard', label: 'Dashboard', icon: BarChart3 },
-              { id: 'database', label: 'Materials Database', icon: Database },
-              { id: 'compare', label: 'Compare Materials', icon: TrendingUp },
-              { id: 'analytics', label: 'LCA Analytics', icon: PieChart }
-            ].map(tab => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center space-x-1 sm:space-x-2 px-2 sm:px-3 py-3 sm:py-4 text-xs sm:text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
-                  activeTab === tab.id ? 'border-green-500 text-green-600' : 'border-transparent text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                <tab.icon className="w-4 h-4 flex-shrink-0" />
-                <span className="hidden sm:inline">{tab.label}</span>
-              </button>
-            ))}
-            <button
-              onClick={() => setActiveTab('methodology')}
-              className={`flex items-center space-x-1 sm:space-x-2 px-2 sm:px-3 py-3 sm:py-4 text-xs sm:text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
-                activeTab === 'methodology' ? 'border-green-500 text-green-600' : 'border-transparent text-gray-500 hover:text-gray-700'
-              }`}
-            >
-              <BookOpen className="w-4 h-4 flex-shrink-0" />
-              <span className="hidden sm:inline">Methodology</span>
-            </button>
-            <button
-              onClick={async () => {
-                try {
-                  // Check if running in Tauri
-                  if (typeof window !== 'undefined' && window.__TAURI_INTERNALS__) {
-                    // Import Tauri API dynamically only when needed
-                    const { invoke } = await import('@tauri-apps/api/core');
-                    // This will open the window if closed, or bring it to front if already open
-                    await invoke('toggle_gpt_window');
-                  } else {
-                    // Fallback for web browser - opens in new tab
-                    window.open('https://chatgpt.com/g/g-68c9d06b6eec81919a2e7d61ed7919c4-sustain', '_blank', 'noopener,noreferrer');
-                  }
-                } catch (error) {
-                  console.error('Failed to open GPT window:', error);
-                  // Fallback to browser in case of any error
-                  window.open('https://chatgpt.com/g/g-68c9d06b6eec81919a2e7d61ed7919c4-sustain', '_blank', 'noopener,noreferrer');
-                }
-              }}
-              className="flex items-center space-x-1 sm:space-x-2 px-2 sm:px-3 py-3 sm:py-4 text-xs sm:text-sm font-medium border-b-2 border-transparent text-green-600 hover:text-green-700 hover:border-green-500 transition-colors cursor-pointer whitespace-nowrap"
-            >
-              <MessageSquare className="w-4 h-4 flex-shrink-0" />
-              <span className="hidden sm:inline">AI Assistant</span>
-            </button>
-          </div>
-        </div>
-      </nav>
+      <Navigation activeTab={activeTab} setActiveTab={setActiveTab} />
 
       {/* Main Content */}
       <main className="flex-1 overflow-auto">
