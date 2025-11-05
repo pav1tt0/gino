@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, Filter, Download, TrendingUp, ChevronDown, ChevronUp } from 'lucide-react';
+import { Search, Filter, Download, TrendingUp, ChevronDown, ChevronUp, MessageSquare } from 'lucide-react';
 
 const MaterialsDatabase = ({
   materials,
@@ -315,9 +315,9 @@ const MaterialsDatabase = ({
               </div>
             </div>
 
-            {/* Fixed Footer with 4 Buttons */}
+            {/* Fixed Footer with 5 Buttons */}
             <div className="bg-gray-50 border-t border-gray-200 p-2 sm:p-3 rounded-b-lg flex-shrink-0">
-              <div className="grid grid-cols-4 gap-1 sm:gap-2">
+              <div className="grid grid-cols-5 gap-1 sm:gap-2">
                 <button
                   onClick={() => exportToCSV([selectedMaterialDetail], `${selectedMaterialDetail['Material Name']}_details`)}
                   className="flex items-center justify-center space-x-0.5 sm:space-x-1 bg-blue-600 text-white py-1.5 sm:py-2 px-1 sm:px-2 rounded-lg hover:bg-blue-700 transition-colors text-xs sm:text-sm font-semibold"
@@ -331,6 +331,73 @@ const MaterialsDatabase = ({
                 >
                   <Download className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                   <span>JSON</span>
+                </button>
+                <button
+                  onClick={async () => {
+                    // Build context for AI Assistant
+                    const material = selectedMaterialDetail;
+                    const prompt = `I need information about ${material['Material Name']} (${material['Category']}).
+
+Key properties:
+- Sustainability Score: ${material['Sustainability Score'] || material['Sustainability Rating'] || 'N/A'}
+- GHG Emissions: ${material['GHG Emissions (kg CO2e/kg)'] || 'N/A'} kg CO2e/kg
+- Water Consumption: ${material['Water Consumption (L/kg)'] || 'N/A'} L/kg
+- Energy Use: ${material['Energy Use (MJ/kg)'] || 'N/A'} MJ/kg
+- Durability: ${material['Durability'] || 'N/A'}
+- Cost Range: ${material['Cost Range ($/kg)'] || 'N/A'}
+- Primary Applications: ${material['Primary Applications'] || 'N/A'}
+
+Can you help me understand this material better and suggest alternatives or best use cases?`;
+
+                    // Copy to clipboard
+                    try {
+                      await navigator.clipboard.writeText(prompt);
+
+                      // Remove any existing toast to avoid accumulation
+                      const existingToast = document.getElementById('ai-toast');
+                      if (existingToast) existingToast.remove();
+
+                      // Create and show toast notification
+                      const toast = document.createElement('div');
+                      toast.id = 'ai-toast';
+                      toast.className = 'fixed top-20 right-4 bg-green-600 text-white px-6 py-4 rounded-lg shadow-lg z-50 max-w-md';
+                      toast.innerHTML = `
+                        <div class="flex items-start space-x-3">
+                          <svg class="w-5 h-5 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                          </svg>
+                          <div>
+                            <p class="font-semibold">Material data copied!</p>
+                            <p class="text-sm text-green-100 mt-1">Paste it in the AI chat (Ctrl+V or Cmd+V)</p>
+                          </div>
+                        </div>
+                      `;
+                      document.body.appendChild(toast);
+
+                      // Remove toast after 8 seconds
+                      setTimeout(() => {
+                        const el = document.getElementById('ai-toast');
+                        if (el) el.remove();
+                      }, 8000);
+
+                      // Open GPT after a short delay
+                      setTimeout(() => {
+                        window.open(
+                          'https://chatgpt.com/g/g-68c9d06b6eec81919a2e7d61ed7919c4-sustain',
+                          'sustAId_AI_Assistant'
+                        );
+                      }, 500);
+                    } catch (err) {
+                      alert('Could not copy to clipboard. Please enable clipboard permissions.');
+                      console.error('Clipboard error:', err);
+                    }
+                  }}
+                  className="flex items-center justify-center space-x-0.5 sm:space-x-1 bg-green-600 text-white py-1.5 sm:py-2 px-1 sm:px-2 rounded-lg hover:bg-green-700 transition-colors text-xs sm:text-sm font-semibold"
+                  title="💡 Tip: Keep the AI Assistant tab open to avoid opening multiple tabs"
+                >
+                  <MessageSquare className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                  <span className="hidden sm:inline">Ask AI</span>
+                  <span className="sm:hidden">AI</span>
                 </button>
                 <button
                   onClick={() => {

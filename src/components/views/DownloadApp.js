@@ -1,5 +1,5 @@
 import React from 'react';
-import { Download, Monitor, Apple, AlertCircle, Terminal, CheckCircle } from 'lucide-react';
+import { Download, Monitor, Apple, AlertCircle, Terminal, CheckCircle, BookOpen } from 'lucide-react';
 
 const DownloadApp = () => {
   return (
@@ -72,6 +72,28 @@ const DownloadApp = () => {
           </a>
           <p className="text-xs text-gray-500 mt-2 text-center">sustaid_mac.zip (6.7 MB)</p>
         </div>
+      </div>
+
+      {/* User Guide PDF */}
+      <div className="bg-white rounded-xl shadow-lg p-6 border-2 border-green-200">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <BookOpen className="w-8 h-8 text-green-600" />
+            <div>
+              <h3 className="text-xl font-bold text-gray-900">User Guide</h3>
+              <p className="text-sm text-gray-600">Complete guide for using sustAId Desktop App</p>
+            </div>
+          </div>
+          <a
+            href="/downloads/sustaid_user_guide.pdf"
+            download
+            className="flex items-center space-x-2 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
+          >
+            <Download className="w-5 h-5" />
+            <span>Download Guide</span>
+          </a>
+        </div>
+        <p className="text-xs text-gray-500 mt-3">sustaid_user_guide.pdf - Installation instructions, features overview, and troubleshooting tips</p>
       </div>
 
       {/* Installation Instructions */}

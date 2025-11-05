@@ -16,6 +16,12 @@ import DataPreviewModal from './components/modals/DataPreviewModal';
 import Dashboard from './components/views/Dashboard';
 import MaterialsDatabase from './components/views/MaterialsDatabase';
 import DownloadApp from './components/views/DownloadApp';
+import { Document, Page, pdfjs } from 'react-pdf';
+import 'react-pdf/dist/Page/AnnotationLayer.css';
+import 'react-pdf/dist/Page/TextLayer.css';
+
+// Configure PDF.js worker
+pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
 // Chart Export Buttons Component
 const ChartExportButtons = ({ chartRef, chartId, filename }) => {
@@ -177,6 +183,7 @@ const SustainableMaterialsApp = () => {
   const [showConfirm, setShowConfirm] = useState(false);
   const [confirmMessage, setConfirmMessage] = useState('');
   const [confirmCallback, setConfirmCallback] = useState(null);
+  const [numPages, setNumPages] = useState(null);
 
   // Load materials from Supabase on mount
   useEffect(() => {
@@ -976,17 +983,41 @@ const SustainableMaterialsApp = () => {
                   <span>Download PDF</span>
                 </a>
               </div>
-              <div className="space-y-4">
-                {[1, 2, 3, 4, 5, 6, 7].map((pageNum) => (
-                  <div key={pageNum} className="border border-gray-200 rounded-lg overflow-hidden shadow-sm">
-                    <img
-                      src={`/Page${pageNum}.png`}
-                      alt={`Methodology Page ${pageNum}`}
-                      className="w-full h-auto"
-                      loading="lazy"
-                    />
-                  </div>
-                ))}
+              <div className="flex flex-col items-center space-y-4 w-full">
+                <Document
+                  file="/Methodology.pdf"
+                  onLoadSuccess={({ numPages }) => setNumPages(numPages)}
+                  loading={
+                    <div className="flex items-center justify-center py-8">
+                      <RefreshCw className="w-8 h-8 text-green-600 animate-spin" />
+                      <span className="ml-2 text-gray-600">Loading PDF...</span>
+                    </div>
+                  }
+                  error={
+                    <div className="flex items-center justify-center py-8 text-red-600">
+                      <AlertCircle className="w-8 h-8 mr-2" />
+                      <span>Failed to load PDF</span>
+                    </div>
+                  }
+                  className="w-full"
+                >
+                  {numPages && Array.from(new Array(numPages), (el, index) => (
+                    <div key={`page_${index + 1}`} className="mb-4 border border-gray-200 rounded-lg overflow-hidden shadow-sm w-full flex justify-center">
+                      <Page
+                        pageNumber={index + 1}
+                        renderTextLayer={true}
+                        renderAnnotationLayer={true}
+                        className="max-w-full"
+                        width={window.innerWidth > 768 ? Math.min(window.innerWidth - 200, 1400) : window.innerWidth - 80}
+                      />
+                    </div>
+                  ))}
+                </Document>
+                {numPages && (
+                  <p className="text-sm text-gray-600 mt-4">
+                    Total pages: {numPages}
+                  </p>
+                )}
               </div>
             </div>
           </div>
@@ -2021,27 +2052,46 @@ const SustainableMaterialsApp = () => {
 
                 {/* Detailed Comparison Table - FIRST */}
                 <div className="bg-white rounded-xl shadow-lg p-6">
-                  <h2 className="text-xl font-bold text-gray-900 mb-4">Detailed Property Comparison</h2>
-                  <div className="overflow-x-auto pb-2" style={{
-                    scrollbarWidth: 'thin',
-                    scrollbarColor: '#10b981 #e5e7eb'
-                  }}>
-                    <style jsx>{`
-                      div::-webkit-scrollbar {
-                        height: 12px;
-                      }
-                      div::-webkit-scrollbar-track {
-                        background: #f1f1f1;
-                        border-radius: 10px;
-                      }
-                      div::-webkit-scrollbar-thumb {
-                        background: #10b981;
-                        border-radius: 10px;
-                      }
-                      div::-webkit-scrollbar-thumb:hover {
-                        background: #059669;
-                      }
-                    `}</style>
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-xl font-bold text-gray-900">Detailed Property Comparison</h2>
+                    {selectedMaterials.length > 4 && (
+                      <div className="flex items-center space-x-2 text-blue-600 animate-pulse">
+                        <span className="text-sm font-medium">Scroll horizontally to view all materials</span>
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
+                      </div>
+                    )}
+                  </div>
+                  <div className="relative">
+                    {/* Gradient shadows for scroll indication */}
+                    {selectedMaterials.length > 4 && (
+                      <>
+                        <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-white to-transparent pointer-events-none z-10"></div>
+                        <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-white to-transparent pointer-events-none z-10"></div>
+                      </>
+                    )}
+                    <div className="overflow-x-auto pb-2" style={{
+                      scrollbarWidth: 'thin',
+                      scrollbarColor: '#10b981 #e5e7eb'
+                    }}>
+                      <style jsx>{`
+                        div::-webkit-scrollbar {
+                          height: 14px;
+                        }
+                        div::-webkit-scrollbar-track {
+                          background: #f1f1f1;
+                          border-radius: 10px;
+                        }
+                        div::-webkit-scrollbar-thumb {
+                          background: #10b981;
+                          border-radius: 10px;
+                          border: 2px solid #f1f1f1;
+                        }
+                        div::-webkit-scrollbar-thumb:hover {
+                          background: #059669;
+                        }
+                      `}</style>
                     <table className={`divide-y divide-gray-200 ${selectedMaterials.length <= 4 ? 'w-full' : 'min-w-max'}`}>
                       <thead className="bg-gray-50">
                         <tr>
@@ -2119,6 +2169,7 @@ const SustainableMaterialsApp = () => {
                         })}
                       </tbody>
                     </table>
+                    </div>
                   </div>
                 </div>
 
@@ -2269,9 +2320,16 @@ const SustainableMaterialsApp = () => {
         {/* Footer */}
         <footer className="mt-auto bg-white border-t border-gray-200 py-4">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <p className="text-center text-sm text-gray-600">
-              Developed by <span className="font-semibold text-green-600">Alessia Vittori</span> © 2025
-            </p>
+            <div className="text-center text-sm text-gray-600">
+              <p className="mb-1">
+                Developed by <span className="font-semibold text-green-600">Alessia Vittori</span> © 2025
+              </p>
+              <p>
+                <a href="mailto:info@sustaid.net" className="text-green-600 hover:text-green-700 transition-colors">
+                  info@sustaid.net
+                </a>
+              </p>
+            </div>
           </div>
         </footer>
       </main>

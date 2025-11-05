@@ -3,8 +3,8 @@ import { BarChart3, Database, TrendingUp, PieChart, BookOpen, Download, MessageS
 
 const Navigation = ({ activeTab, setActiveTab }) => {
   const handleAIAssistantClick = () => {
-    // Open AI Assistant in new tab
-    window.open('https://chatgpt.com/g/g-68c9d06b6eec81919a2e7d61ed7919c4-sustain', '_blank', 'noopener,noreferrer');
+    // Open AI Assistant (reuses same tab if already open)
+    window.open('https://chatgpt.com/g/g-68c9d06b6eec81919a2e7d61ed7919c4-sustain', 'sustAId_AI_Assistant');
   };
 
   return (
@@ -51,6 +51,7 @@ const Navigation = ({ activeTab, setActiveTab }) => {
           <button
             onClick={handleAIAssistantClick}
             className="flex items-center space-x-1 sm:space-x-2 px-2 sm:px-3 py-3 sm:py-4 text-xs sm:text-sm font-medium border-b-2 border-transparent text-green-600 hover:text-green-700 hover:border-green-500 transition-colors cursor-pointer whitespace-nowrap"
+            title="💡 Tip: Keep the AI Assistant tab open to avoid opening multiple tabs"
           >
             <MessageSquare className="w-4 h-4 flex-shrink-0" />
             <span className="sm:hidden">AI</span>
