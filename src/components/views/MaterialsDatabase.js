@@ -1,5 +1,5 @@
-import React from 'react';
-import { Search, Filter, Download, TrendingUp } from 'lucide-react';
+import React, { useState } from 'react';
+import { Search, Filter, Download, TrendingUp, ChevronDown, ChevronUp } from 'lucide-react';
 
 const MaterialsDatabase = ({
   materials,
@@ -18,6 +18,8 @@ const MaterialsDatabase = ({
   selectedMaterials,
   setSelectedMaterials
 }) => {
+  const [showApplications, setShowApplications] = useState(false);
+
   return (
     <div className="space-y-6">
       {/* Search and Filters */}
@@ -78,53 +80,53 @@ const MaterialsDatabase = ({
 
       {/* Materials Table */}
       <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-200">
-          <h2 className="text-xl font-bold text-gray-900">Materials Database</h2>
-          <p className="text-sm text-gray-600">Showing {filteredMaterials.length} materials</p>
+        <div className="px-3 sm:px-4 md:px-6 py-3 sm:py-4 border-b border-gray-200">
+          <h2 className="text-lg sm:text-xl font-bold text-gray-900">Materials Database</h2>
+          <p className="text-xs sm:text-sm text-gray-600">Showing {filteredMaterials.length} materials</p>
         </div>
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Material</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sustainability Score</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Environmental Sustainability</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Durability</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cost Range</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                <th className="px-1 sm:px-4 md:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Material</th>
+                <th className="px-1 sm:px-4 md:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
+                <th className="px-1 sm:px-4 md:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sustainability Score</th>
+                <th className="px-1 sm:px-4 md:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Environmental Sustainability</th>
+                <th className="px-1 sm:px-4 md:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Durability</th>
+                <th className="px-1 sm:px-4 md:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cost Range</th>
+                <th className="px-1 sm:px-4 md:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {filteredMaterials.map((material, index) => (
                 <tr key={index} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className="px-1 sm:px-4 md:px-6 py-2 sm:py-3 md:py-4 max-w-[80px] sm:max-w-[120px] md:whitespace-nowrap md:max-w-none">
                     <button
                       onClick={() => setSelectedMaterialDetail(material)}
-                      className="text-sm font-medium hover:underline cursor-pointer transition-opacity hover:opacity-80"
+                      className="text-xs sm:text-sm font-medium hover:underline cursor-pointer transition-opacity hover:opacity-80 text-left leading-tight"
                       style={{ color: getSustainabilityColor(material['Sustainability Score']) }}
                     >
                       {material['Material Name'] || 'Unknown'}
                     </button>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                  <td className="px-1 sm:px-4 md:px-6 py-2 sm:py-3 md:py-4 whitespace-nowrap">
+                    <span className="text-xs sm:text-sm text-gray-900">
                       {material.Category || 'N/A'}
                     </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">{material['Sustainability Score'] || 'N/A'}</div>
+                  <td className="px-1 sm:px-4 md:px-6 py-2 sm:py-3 md:py-4 whitespace-nowrap">
+                    <div className="text-xs sm:text-sm text-gray-900">{material['Sustainability Score'] || 'N/A'}</div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  <td className="px-1 sm:px-4 md:px-6 py-2 sm:py-3 md:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900">
                     {material['Environmental_Sustainability'] || 'N/A'}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  <td className="px-1 sm:px-4 md:px-6 py-2 sm:py-3 md:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900">
                     {material['Durability'] || 'N/A'}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  <td className="px-1 sm:px-4 md:px-6 py-2 sm:py-3 md:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-900">
                     {material['Cost Range ($/kg)'] || 'N/A'}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                  <td className="px-1 sm:px-4 md:px-6 py-2 sm:py-3 md:py-4 whitespace-nowrap text-xs sm:text-sm font-medium">
                     <button
                       onClick={() => {
                         const materialName = material['Material Name'];
@@ -146,8 +148,8 @@ const MaterialsDatabase = ({
 
       {/* Material Detail Modal */}
       {selectedMaterialDetail && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4" onClick={() => setSelectedMaterialDetail(null)}>
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-6xl max-h-[90vh] sm:max-h-[85vh] overflow-hidden flex flex-col" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-0 sm:p-4" onClick={() => setSelectedMaterialDetail(null)}>
+          <div className="bg-white w-full h-full sm:rounded-lg sm:shadow-xl sm:w-auto sm:max-w-3xl md:max-w-4xl lg:max-w-6xl sm:max-h-[90vh] sm:h-auto overflow-hidden flex flex-col" onClick={(e) => e.stopPropagation()}>
             {/* Modal Header - Fixed */}
             <div className="bg-white border-b border-gray-200 p-3 sm:p-4 rounded-t-lg flex-shrink-0">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-2 sm:mb-3 gap-2">
@@ -201,13 +203,27 @@ const MaterialsDatabase = ({
                 </div>
               </div>
 
-              {/* Primary Applications */}
+              {/* Primary Applications - Collapsible */}
               {selectedMaterialDetail['Primary Applications'] && (
-                <div className="bg-amber-50 p-2 sm:p-3 rounded-lg border border-amber-200 mt-2 sm:mt-3">
-                  <div className="text-[10px] sm:text-xs font-semibold text-amber-900 uppercase mb-1">Primary Applications</div>
-                  <div className="text-xs sm:text-sm text-gray-800 leading-snug">
-                    {selectedMaterialDetail['Primary Applications']}
-                  </div>
+                <div className="bg-amber-50 rounded-lg border border-amber-200 mt-2 sm:mt-3 overflow-hidden">
+                  <button
+                    onClick={() => setShowApplications(!showApplications)}
+                    className="w-full flex items-center justify-between p-2 sm:p-3 hover:bg-amber-100 transition-colors"
+                  >
+                    <div className="text-[10px] sm:text-xs font-semibold text-amber-900 uppercase">Primary Applications</div>
+                    {showApplications ? (
+                      <ChevronUp className="w-4 h-4 text-amber-900" />
+                    ) : (
+                      <ChevronDown className="w-4 h-4 text-amber-900" />
+                    )}
+                  </button>
+                  {showApplications && (
+                    <div className="px-2 pb-2 sm:px-3 sm:pb-3">
+                      <div className="text-xs sm:text-sm text-gray-800 leading-snug">
+                        {selectedMaterialDetail['Primary Applications']}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -307,14 +323,14 @@ const MaterialsDatabase = ({
                   className="flex items-center justify-center space-x-0.5 sm:space-x-1 bg-blue-600 text-white py-1.5 sm:py-2 px-1 sm:px-2 rounded-lg hover:bg-blue-700 transition-colors text-xs sm:text-sm font-semibold"
                 >
                   <Download className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                  <span className="hidden sm:inline">CSV</span>
+                  <span>CSV</span>
                 </button>
                 <button
                   onClick={() => exportToJSON([selectedMaterialDetail], `${selectedMaterialDetail['Material Name']}_details`)}
                   className="flex items-center justify-center space-x-0.5 sm:space-x-1 bg-purple-600 text-white py-1.5 sm:py-2 px-1 sm:px-2 rounded-lg hover:bg-purple-700 transition-colors text-xs sm:text-sm font-semibold"
                 >
                   <Download className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                  <span className="hidden sm:inline">JSON</span>
+                  <span>JSON</span>
                 </button>
                 <button
                   onClick={() => {
@@ -332,7 +348,7 @@ const MaterialsDatabase = ({
                   }`}
                 >
                   <TrendingUp className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                  <span className="hidden sm:inline">{selectedMaterials.includes(selectedMaterialDetail['Material Name']) ? 'Remove' : 'Compare'}</span>
+                  <span>{selectedMaterials.includes(selectedMaterialDetail['Material Name']) ? 'Remove' : 'Compare'}</span>
                 </button>
                 <button
                   onClick={() => setSelectedMaterialDetail(null)}

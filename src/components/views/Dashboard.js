@@ -53,75 +53,76 @@ const Dashboard = ({ totalMaterials, categories, avgSustainability, highSustaina
         }}></div>
 
         {/* Main Content */}
-        <div className="relative z-10 flex flex-col items-center justify-center px-4 sm:px-8 py-6 sm:py-8">
+        <div className="relative z-10 flex flex-col items-center justify-center px-3 sm:px-8 py-4 sm:py-8">
           {/* Welcome Title */}
-          <h2 className="text-2xl sm:text-4xl md:text-5xl font-bold text-gray-900 mb-3 text-center">
+          <h2 className="text-xl sm:text-4xl md:text-5xl font-bold text-gray-900 mb-2 sm:mb-3 text-center">
             Welcome to sust<span style={{ color: '#517745', fontStyle: 'italic', fontSize: '1.2em' }}>AI</span>d
           </h2>
-          <p className="text-base sm:text-xl text-gray-700 mb-6 text-center">AI-Powered Sustainable Material Selection</p>
+          <p className="text-sm sm:text-xl text-gray-700 mb-4 sm:mb-6 text-center">AI-Powered Sustainable Material Selection</p>
 
           {/* Infographic Flow */}
-          <div className="bg-white bg-opacity-90 backdrop-blur-sm rounded-2xl shadow-2xl p-4 sm:p-6 mb-4 max-w-5xl w-full">
-            <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+          <div className="bg-white bg-opacity-90 backdrop-blur-sm rounded-xl sm:rounded-2xl shadow-2xl p-3 sm:p-6 mb-2 sm:mb-4 max-w-5xl w-full">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-3 sm:gap-6">
               {/* Step 1: Raw Materials */}
               <div className="flex flex-col items-center text-center flex-1">
-                <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mb-3 shadow-lg">
-                  <span className="text-4xl">🧵</span>
+                <div className="w-14 h-14 sm:w-20 sm:h-20 bg-green-100 rounded-full flex items-center justify-center mb-2 sm:mb-3 shadow-lg">
+                  <span className="text-2xl sm:text-4xl">🧵</span>
                 </div>
-                <h3 className="font-bold text-gray-900 text-lg">Raw Materials</h3>
-                <p className="text-sm text-gray-600 mt-1">Fibres & Textiles</p>
+                <h3 className="font-bold text-gray-900 text-sm sm:text-lg">Raw Materials</h3>
+                <p className="text-xs sm:text-sm text-gray-600 mt-0.5 sm:mt-1">Fibres & Textiles</p>
               </div>
 
               {/* Arrow */}
               <div className="hidden md:block text-3xl text-green-600 font-bold">→</div>
-              <div className="md:hidden text-3xl text-green-600 font-bold rotate-90">→</div>
+              <div className="md:hidden text-xl sm:text-2xl text-green-600 font-bold rotate-90">↓</div>
 
               {/* Step 2: LCA Analysis */}
               <div className="flex flex-col items-center text-center flex-1">
-                <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mb-3 shadow-lg">
-                  <span className="text-4xl">📊</span>
+                <div className="w-14 h-14 sm:w-20 sm:h-20 bg-blue-100 rounded-full flex items-center justify-center mb-2 sm:mb-3 shadow-lg">
+                  <span className="text-2xl sm:text-4xl">📊</span>
                 </div>
-                <h3 className="font-bold text-gray-900 text-lg">LCA Analysis</h3>
-                <p className="text-sm text-gray-600 mt-1">Environmental Impact</p>
+                <h3 className="font-bold text-gray-900 text-sm sm:text-lg">LCA Analysis</h3>
+                <p className="text-xs sm:text-sm text-gray-600 mt-0.5 sm:mt-1">Environmental Impact</p>
               </div>
 
               {/* Arrow */}
               <div className="hidden md:block text-3xl text-blue-600 font-bold">→</div>
-              <div className="md:hidden text-3xl text-blue-600 font-bold rotate-90">→</div>
+              <div className="md:hidden text-xl sm:text-2xl text-blue-600 font-bold rotate-90">↓</div>
 
               {/* Step 3: Designer's Perspective */}
               <div className="flex flex-col items-center text-center flex-1">
-                <div className="w-20 h-20 rounded-full flex items-center justify-center mb-3 shadow-lg" style={{ backgroundColor: '#fce7f3' }}>
-                  <span className="text-4xl">👤</span>
+                <div className="w-14 h-14 sm:w-20 sm:h-20 rounded-full flex items-center justify-center mb-2 sm:mb-3 shadow-lg" style={{ backgroundColor: '#fce7f3' }}>
+                  <span className="text-2xl sm:text-4xl">👤</span>
                 </div>
-                <h3 className="font-bold text-gray-900 text-lg">Designer's Perspective</h3>
-                <p className="text-sm text-gray-600 mt-1">Design Considerations & Properties</p>
+                <h3 className="font-bold text-gray-900 text-sm sm:text-lg">Designer's Perspective</h3>
+                <p className="text-xs sm:text-sm text-gray-600 mt-0.5 sm:mt-1 hidden sm:block">Design Considerations & Properties</p>
+                <p className="text-xs text-gray-600 mt-0.5 sm:hidden">Design & Properties</p>
               </div>
 
               {/* Arrow */}
               <div className="hidden md:block text-3xl font-bold" style={{ color: '#db2777' }}>→</div>
-              <div className="md:hidden text-3xl font-bold rotate-90" style={{ color: '#db2777' }}>→</div>
+              <div className="md:hidden text-xl sm:text-2xl font-bold rotate-90" style={{ color: '#db2777' }}>↓</div>
 
               {/* Step 4: AI Decision */}
               <div className="flex flex-col items-center text-center flex-1">
-                <div className="w-20 h-20 bg-purple-100 rounded-full flex items-center justify-center mb-3 shadow-lg">
-                  <span className="text-4xl">🤖</span>
+                <div className="w-14 h-14 sm:w-20 sm:h-20 bg-purple-100 rounded-full flex items-center justify-center mb-2 sm:mb-3 shadow-lg">
+                  <span className="text-2xl sm:text-4xl">🤖</span>
                 </div>
-                <h3 className="font-bold text-gray-900 text-lg">AI Decision</h3>
-                <p className="text-sm text-gray-600 mt-1">Intelligent Analysis</p>
+                <h3 className="font-bold text-gray-900 text-sm sm:text-lg">AI Decision</h3>
+                <p className="text-xs sm:text-sm text-gray-600 mt-0.5 sm:mt-1">Intelligent Analysis</p>
               </div>
 
               {/* Arrow */}
               <div className="hidden md:block text-3xl text-purple-600 font-bold">→</div>
-              <div className="md:hidden text-3xl text-purple-600 font-bold rotate-90">→</div>
+              <div className="md:hidden text-xl sm:text-2xl text-purple-600 font-bold rotate-90">↓</div>
 
               {/* Step 5: Sustainable Choice */}
               <div className="flex flex-col items-center text-center flex-1">
-                <div className="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center mb-3 shadow-lg">
-                  <span className="text-4xl">✓</span>
+                <div className="w-14 h-14 sm:w-20 sm:h-20 bg-emerald-100 rounded-full flex items-center justify-center mb-2 sm:mb-3 shadow-lg">
+                  <span className="text-2xl sm:text-4xl">✓</span>
                 </div>
-                <h3 className="font-bold text-gray-900 text-lg">Sustainable Choice</h3>
-                <p className="text-sm text-gray-600 mt-1">Informed Decision</p>
+                <h3 className="font-bold text-gray-900 text-sm sm:text-lg">Sustainable Choice</h3>
+                <p className="text-xs sm:text-sm text-gray-600 mt-0.5 sm:mt-1">Informed Decision</p>
               </div>
             </div>
           </div>

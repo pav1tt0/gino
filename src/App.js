@@ -177,12 +177,6 @@ const SustainableMaterialsApp = () => {
   const [showConfirm, setShowConfirm] = useState(false);
   const [confirmMessage, setConfirmMessage] = useState('');
   const [confirmCallback, setConfirmCallback] = useState(null);
-  const [isTauriApp, setIsTauriApp] = useState(false);
-
-  // Detect if running in Tauri
-  useEffect(() => {
-    setIsTauriApp(typeof window !== 'undefined' && !!window.__TAURI_INTERNALS__);
-  }, []);
 
   // Load materials from Supabase on mount
   useEffect(() => {
@@ -918,7 +912,6 @@ const SustainableMaterialsApp = () => {
 
       {/* Header */}
       <Header
-        isTauriApp={isTauriApp}
         handleFileUpload={handleFileUpload}
         handleReloadSupabase={handleReloadSupabase}
         supabaseMaterials={supabaseMaterials}

@@ -3,7 +3,6 @@ import { Upload, Database } from 'lucide-react';
 import logo from '../../Logo-sustain.png';
 
 const Header = ({
-  isTauriApp,
   handleFileUpload,
   handleReloadSupabase,
   supabaseMaterials
