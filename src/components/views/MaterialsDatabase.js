@@ -380,12 +380,74 @@ Can you help me understand this material better and suggest alternatives or best
                         if (el) el.remove();
                       }, 8000);
 
-                      // Open GPT after a short delay
+                      // Open GPT after a short delay, with check for existing window
                       setTimeout(() => {
-                        window.open(
-                          'https://chatgpt.com/g/g-68c9d06b6eec81919a2e7d61ed7919c4-sustain',
-                          'sustAId_AI_Assistant'
-                        );
+                        const now = Date.now();
+                        const lastOpenTime = window.sustAIdGPTWindowOpenTime || 0;
+                        const timeSinceOpen = now - lastOpenTime;
+                        const thirtySeconds = 30000;
+
+                        // Check if we have a reference to the GPT window
+                        let windowIsOpen = false;
+
+                        // If opened within last 30 seconds, assume it's still open
+                        if (timeSinceOpen < thirtySeconds && lastOpenTime > 0) {
+                          windowIsOpen = true;
+                        } else {
+                          // After 30 seconds, check if it's actually closed
+                          try {
+                            if (window.sustAIdGPTWindow) {
+                              const isClosed = window.sustAIdGPTWindow.closed;
+                              if (isClosed) {
+                                // Window is closed - clear the timestamp
+                                window.sustAIdGPTWindowOpenTime = 0;
+                                windowIsOpen = false;
+                              } else {
+                                // Still open after 30 seconds (rare but possible)
+                                windowIsOpen = true;
+                              }
+                            } else {
+                              // No reference exists
+                              windowIsOpen = false;
+                            }
+                          } catch (e) {
+                            // Can't check - assume it's closed after 30 seconds
+                            windowIsOpen = false;
+                          }
+                        }
+
+                        if (windowIsOpen) {
+                          // Window exists and is open - ask user what to do
+                          if (window.showSustAIdConfirm) {
+                            window.showSustAIdConfirm('The sustAId AI Assistant tab is already open. Would you like to open a new tab or keep using the existing one?').then((openNew) => {
+                              if (openNew) {
+                                // User wants a new tab - use _blank to force new tab
+                                window.sustAIdGPTWindow = window.open(
+                                  'https://chatgpt.com/g/g-68c9d06b6eec81919a2e7d61ed7919c4-sustain',
+                                  '_blank'
+                                );
+                                window.sustAIdGPTWindowOpenTime = Date.now();
+                              } else {
+                                // User wants to keep existing - just try to focus it
+                                try {
+                                  if (window.sustAIdGPTWindow && !window.sustAIdGPTWindow.closed) {
+                                    window.sustAIdGPTWindow.focus();
+                                  }
+                                } catch (e) {
+                                  // Could not focus - do nothing
+                                }
+                                // Don't update timestamp - keep the original open time
+                              }
+                            });
+                          }
+                        } else {
+                          // Window doesn't exist or is closed - open it
+                          window.sustAIdGPTWindow = window.open(
+                            'https://chatgpt.com/g/g-68c9d06b6eec81919a2e7d61ed7919c4-sustain',
+                            'sustAId_AI_Assistant'
+                          );
+                          window.sustAIdGPTWindowOpenTime = Date.now();
+                        }
                       }, 500);
                     } catch (err) {
                       alert('Could not copy to clipboard. Please enable clipboard permissions.');
@@ -393,7 +455,6 @@ Can you help me understand this material better and suggest alternatives or best
                     }
                   }}
                   className="flex items-center justify-center space-x-0.5 sm:space-x-1 bg-green-600 text-white py-1.5 sm:py-2 px-1 sm:px-2 rounded-lg hover:bg-green-700 transition-colors text-xs sm:text-sm font-semibold"
-                  title="💡 Tip: Keep the AI Assistant tab open to avoid opening multiple tabs"
                 >
                   <MessageSquare className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                   <span className="hidden sm:inline">Ask AI</span>

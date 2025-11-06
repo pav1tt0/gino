@@ -1,0 +1,167 @@
+================================================================
+  sustAId - AI Assistant Button Implementation Notes
+================================================================
+
+ULTIMO AGGIORNAMENTO: 2025-01-06
+
+================================================================
+PROBLEMA ORIGINALE
+================================================================
+
+Quando si cliccava sul pulsante "AI Assistant" o "Ask AI", si aprivano
+sempre nuove schede/tab del GPT senza alcun controllo, causando
+l'accumulo di troppe schede aperte.
+
+================================================================
+SOLUZIONE IMPLEMENTATA
+================================================================
+
+Sistema di controllo intelligente che:
+1. Rileva se una finestra GPT è già aperta
+2. Mostra un dialog custom per chiedere all'utente cosa fare
+3. Gestisce correttamente il riuso della scheda esistente
+
+================================================================
+COME FUNZIONA ATTUALMENTE
+================================================================
+
+**Primo click:**
+- Apre la scheda GPT con target name 'sustAId_AI_Assistant'
+- Salva timestamp in window.sustAIdGPTWindowOpenTime
+
+**Click successivo (entro 30 secondi):**
+- Mostra dialog custom con 2 opzioni:
+  * "Open New Tab" → Apre nuova scheda con _blank
+  * "Keep Existing" → Mantiene la scheda esistente (focus)
+
+**Click dopo 30+ secondi:**
+- Controlla window.sustAIdGPTWindow.closed
+- Se closed === true → Apre direttamente senza dialog
+- Se closed === false → Mostra dialog
+
+================================================================
+COMPONENTI MODIFICATI
+================================================================
+
+1. src/components/common/Navigation.js
+   - Pulsante "AI Assistant" nella navbar
+   - Funzione globale window.showSustAIdConfirm() per dialog custom
+   - Logica di controllo apertura finestra
+
+2. src/components/views/MaterialsDatabase.js
+   - Pulsante "Ask AI" nel modal dei dettagli materiale
+   - Copia dati materiale negli appunti prima di aprire GPT
+   - Usa stessa logica di controllo
+
+================================================================
+VARIABILI GLOBALI UTILIZZATE
+================================================================
+
+- window.sustAIdGPTWindow
+  Riferimento alla finestra GPT aperta
+
+- window.sustAIdGPTWindowOpenTime
+  Timestamp (Date.now()) dell'ultima apertura
+
+- window.showSustAIdConfirm(message)
+  Funzione per mostrare dialog custom
+
+================================================================
+LIMITAZIONI ATTUALI
+================================================================
+
+1. PROBLEMA DEL RIFERIMENTO "STALE"
+   La proprietà window.sustAIdGPTWindow.closed diventa true
+   immediatamente quando si usa un target name, anche se la
+   finestra è ancora aperta. Per questo usiamo il timestamp
+   come fallback per i primi 30 secondi.
+
+2. CHIUSURA MANUALE ENTRO 30 SECONDI
+   Se l'utente chiude manualmente la finestra GPT entro i primi
+   30 secondi dall'apertura, il dialog apparirà comunque al click
+   successivo (perché assume che sia ancora aperta).
+
+3. CLICK RAPIDI SU PULSANTI DIVERSI
+   Se si clicca su "Ask AI" e poi subito su "AI Assistant",
+   il secondo non mostra il dialog (perché usa lo stesso timestamp).
+
+4. CROSS-ORIGIN SECURITY
+   Il browser blocca alcuni controlli per sicurezza quando la
+   finestra è su dominio esterno (chatgpt.com).
+
+================================================================
+POSSIBILI MIGLIORAMENTI FUTURI
+================================================================
+
+OPZIONE A: Dialog sempre quando la finestra è già aperta
+- Più conservativo
+- Chiede sempre conferma
+- Modificare: Ridurre timeout a 0 per sempre controllare .closed
+
+OPZIONE B: Cooldown dopo risposta dell'utente
+- Se l'utente sceglie "Keep Existing", non mostrare dialog
+  per X secondi (es. 5-10 sec)
+- Più fluido per click rapidi su pulsanti diversi
+
+OPZIONE C: Pulsante manuale di reset
+- Aggiungere piccolo link/pulsante "Reset AI Assistant"
+  che azzera window.sustAIdGPTWindowOpenTime
+- Massimo controllo per l'utente
+
+OPZIONE D: Aumentare/Ridurre timeout
+- Attualmente 30 secondi
+- Aumentare per essere più conservativo
+- Ridurre per rilevare chiusura più velocemente
+
+OPZIONE E: Polling in background (scartata)
+- Controllare ogni X secondi se finestra è chiusa
+- Pro: Rileva chiusura immediata
+- Contro: Spreco risorse, problemi cross-origin
+
+================================================================
+CODICE CHIAVE
+================================================================
+
+**Dialog Custom (Navigation.js linee 5-81):**
+window.showSustAIdConfirm = (message) => {
+  return new Promise((resolve) => {
+    // Crea overlay + dialog con animazioni
+    // Resolve(true) → Open New Tab
+    // Resolve(false) → Keep Existing
+  });
+};
+
+**Logica Controllo (Navigation.js linee 84-117):**
+- Se < 30 sec → windowIsOpen = true (mostra dialog)
+- Se >= 30 sec → controlla .closed
+  - closed = true → windowIsOpen = false (apre diretto)
+  - closed = false → windowIsOpen = true (mostra dialog)
+
+**Target Name vs _blank:**
+- 'sustAId_AI_Assistant' → Riusa tab con stesso nome
+- '_blank' → Sempre nuova tab
+
+================================================================
+NOTE TECNICHE
+================================================================
+
+1. La proprietà .closed è l'unica proprietà cross-origin
+   accessibile di window.open(), ma ha limitazioni con
+   target names.
+
+2. sessionStorage viene azzerato quando si chiude il browser,
+   quindi non è affidabile per questo caso d'uso.
+
+3. Il dialog custom usa DOM manipulation puro per evitare
+   dipendenze da stato React.
+
+================================================================
+CONTATTI / RIFERIMENTI
+================================================================
+
+Per modifiche future, verificare:
+- Browser compatibility di window.open() target name
+- Limitazioni cross-origin security
+- Comportamento su mobile (popup blockers)
+
+================================================================
