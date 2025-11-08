@@ -17,7 +17,7 @@ const Header = ({
             </div>
             <div>
               <h1 className="text-xl md:text-3xl font-bold text-gray-900">
-                sust<span style={{ color: '#517745', fontStyle: 'italic', fontSize: '1.2em' }} className="font-extrabold">AI</span>d
+                sust<span style={{ color: '#16a34a', fontStyle: 'italic', fontSize: '1.2em' }} className="font-extrabold">AI</span>d
               </h1>
               <p className="text-xs md:text-base text-gray-600 hidden sm:block">AI-Powered Sustainable Material Selection</p>
             </div>

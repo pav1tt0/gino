@@ -28,6 +28,7 @@ const DownloadApp = () => {
               <li>Windows 10 or later (64-bit)</li>
               <li>Minimum 4 GB RAM (8 GB recommended)</li>
               <li>100 MB disk space</li>
+              <li className="invisible">Spacer</li>
             </ul>
           </div>
 

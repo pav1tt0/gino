@@ -56,7 +56,7 @@ const Dashboard = ({ totalMaterials, categories, avgSustainability, highSustaina
         <div className="relative z-10 flex flex-col items-center justify-center px-3 sm:px-8 py-4 sm:py-8">
           {/* Welcome Title */}
           <h2 className="text-xl sm:text-4xl md:text-5xl font-bold text-gray-900 mb-2 sm:mb-3 text-center">
-            Welcome to sust<span style={{ color: '#517745', fontStyle: 'italic', fontSize: '1.2em' }}>AI</span>d
+            Welcome to sust<span style={{ color: '#16a34a', fontStyle: 'italic', fontSize: '1.2em' }}>AI</span>d
           </h2>
           <p className="text-sm sm:text-xl text-gray-700 mb-4 sm:mb-6 text-center">AI-Powered Sustainable Material Selection</p>
 
