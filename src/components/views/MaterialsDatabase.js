@@ -19,6 +19,7 @@ const MaterialsDatabase = ({
   setSelectedMaterials
 }) => {
   const [showApplications, setShowApplications] = useState(false);
+  const [showAITooltip, setShowAITooltip] = useState(false);
 
   return (
     <div className="space-y-6">
@@ -332,7 +333,8 @@ const MaterialsDatabase = ({
                   <Download className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                   <span>JSON</span>
                 </button>
-                <button
+                <div className="relative group w-full">
+                  <button
                   onClick={async () => {
                     // Build context for AI Assistant
                     const material = selectedMaterialDetail;
@@ -454,12 +456,18 @@ Can you help me understand this material better and suggest alternatives or best
                       console.error('Clipboard error:', err);
                     }
                   }}
-                  className="flex items-center justify-center space-x-0.5 sm:space-x-1 bg-green-600 text-white py-1.5 sm:py-2 px-1 sm:px-2 rounded-lg hover:bg-green-700 transition-colors text-xs sm:text-sm font-semibold"
+                  className="w-full flex items-center justify-center space-x-0.5 sm:space-x-1 bg-green-600 text-white py-1.5 sm:py-2 px-1 sm:px-2 rounded-lg hover:bg-green-700 transition-colors text-xs sm:text-sm font-semibold"
                 >
                   <MessageSquare className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                   <span className="hidden sm:inline">Ask AI</span>
                   <span className="sm:hidden">AI</span>
                 </button>
+                  {/* Tooltip */}
+                  <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-50 shadow-lg">
+                    Copy material data to clipboard and open AI Assistant
+                    <div className="absolute top-full left-1/2 transform -translate-x-1/2 -mt-1 border-4 border-transparent border-t-gray-900"></div>
+                  </div>
+                </div>
                 <button
                   onClick={() => {
                     const materialName = selectedMaterialDetail['Material Name'];

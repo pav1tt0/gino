@@ -197,7 +197,6 @@ const Navigation = ({ activeTab, setActiveTab }) => {
           <button
             onClick={handleAIAssistantClick}
             className="flex items-center space-x-1 sm:space-x-2 px-2 sm:px-3 py-3 sm:py-4 text-xs sm:text-sm font-medium border-b-2 border-transparent text-green-600 hover:text-green-700 hover:border-green-500 transition-colors cursor-pointer whitespace-nowrap"
-            title="💡 Tip: Keep the AI Assistant tab open to avoid opening multiple tabs"
           >
             <MessageSquare className="w-4 h-4 flex-shrink-0" />
             <span className="sm:hidden">AI</span>

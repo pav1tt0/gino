@@ -45,20 +45,22 @@ const Dashboard = ({ totalMaterials, categories, avgSustainability, highSustaina
       </div>
 
       {/* Hero Section with Infographic */}
-      <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-green-100 via-blue-50 to-green-50 shadow-xl">
-        {/* Textile Pattern Background */}
-        <div className="absolute inset-0 opacity-10" style={{
-          backgroundImage: `repeating-linear-gradient(45deg, transparent, transparent 10px, #10b981 10px, #10b981 11px),
-                            repeating-linear-gradient(-45deg, transparent, transparent 10px, #3b82f6 10px, #3b82f6 11px)`
-        }}></div>
+      <div className="relative rounded-2xl overflow-hidden shadow-xl" style={{
+        backgroundImage: 'url(/sfondo.png)',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat'
+      }}>
+        {/* Overlay for better text readability (optional) */}
+        <div className="absolute inset-0 bg-black opacity-20"></div>
 
         {/* Main Content */}
         <div className="relative z-10 flex flex-col items-center justify-center px-3 sm:px-8 py-4 sm:py-8">
           {/* Welcome Title */}
-          <h2 className="text-xl sm:text-4xl md:text-5xl font-bold text-gray-900 mb-2 sm:mb-3 text-center">
-            Welcome to sust<span style={{ color: '#16a34a', fontStyle: 'italic', fontSize: '1.2em' }}>AI</span>d
+          <h2 className="text-xl sm:text-4xl md:text-5xl font-bold text-white mb-2 sm:mb-3 text-center">
+            Welcome to sust<span style={{ color: 'white', fontStyle: 'italic', fontSize: '1.2em' }}>AI</span>d
           </h2>
-          <p className="text-sm sm:text-xl text-gray-700 mb-4 sm:mb-6 text-center">AI-Powered Sustainable Material Selection</p>
+          <p className="text-sm sm:text-xl text-white mb-4 sm:mb-6 text-center">AI-Powered Sustainable Material Selection</p>
 
           {/* Infographic Flow */}
           <div className="bg-white bg-opacity-90 backdrop-blur-sm rounded-xl sm:rounded-2xl shadow-2xl p-3 sm:p-6 mb-2 sm:mb-4 max-w-5xl w-full">
