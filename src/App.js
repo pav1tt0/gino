@@ -1053,7 +1053,7 @@ const SustainableMaterialsApp = () => {
                     className="text-xs px-2 py-1 bg-green-600 text-white rounded hover:bg-green-700 transition-colors ml-2"
                     title="Torna all'inizio"
                   >
-                    ⬆ Inizio
+                    ⬆ Top
                   </button>
                 </div>
               </div>
