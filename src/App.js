@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Database, BarChart3, MessageSquare, RefreshCw, Filter, TrendingUp, Leaf, Zap, Upload, PieChart, Download, Camera, FileImage, X, CheckCircle, AlertCircle, BookOpen } from 'lucide-react';
+import { Search, Database, BarChart3, MessageSquare, RefreshCw, Filter, TrendingUp, Leaf, Zap, Upload, PieChart, Download, Camera, FileImage, X, CheckCircle, AlertCircle, BookOpen, ZoomIn, ZoomOut, ChevronLeft, ChevronRight } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ScatterChart, Scatter, RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Legend, PieChart as RechartsPieChart, Pie, Cell, ComposedChart, Line } from 'recharts';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
@@ -184,6 +184,9 @@ const SustainableMaterialsApp = () => {
   const [confirmMessage, setConfirmMessage] = useState('');
   const [confirmCallback, setConfirmCallback] = useState(null);
   const [numPages, setNumPages] = useState(null);
+  const [pageNumber, setPageNumber] = useState(1);
+  const [scale, setScale] = useState(1.0);
+  const pageRefs = React.useRef([]);
 
   // Load materials from Supabase on mount
   useEffect(() => {
@@ -215,6 +218,14 @@ const SustainableMaterialsApp = () => {
       .then(text => setMethodologyContent(text))
       .catch(error => console.error('Error loading methodology:', error));
   }, []);
+
+  // Handle page navigation with scroll
+  const goToPage = (page) => {
+    setPageNumber(page);
+    if (pageRefs.current[page - 1]) {
+      pageRefs.current[page - 1].scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
 
   // Utility functions
   const getSustainabilityColor = (score) => {
@@ -983,6 +994,70 @@ const SustainableMaterialsApp = () => {
                   <span>Download PDF</span>
                 </a>
               </div>
+
+              {/* PDF Controls */}
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mb-4 bg-gray-50 p-3 rounded-lg sticky top-0 z-10 shadow-md">
+                {/* Navigation Controls */}
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => goToPage(Math.max(pageNumber - 1, 1))}
+                    disabled={pageNumber <= 1}
+                    className="flex items-center justify-center w-8 h-8 bg-green-600 text-white rounded hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+                    title="Previous page"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+                  <span className="text-sm text-gray-700 min-w-[100px] text-center">
+                    Page {pageNumber} of {numPages || '...'}
+                  </span>
+                  <button
+                    onClick={() => goToPage(Math.min(pageNumber + 1, numPages || pageNumber))}
+                    disabled={pageNumber >= numPages}
+                    className="flex items-center justify-center w-8 h-8 bg-green-600 text-white rounded hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+                    title="Next page"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
+
+                {/* Zoom Controls */}
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setScale(prev => Math.max(prev - 0.2, 0.5))}
+                    disabled={scale <= 0.5}
+                    className="flex items-center justify-center w-8 h-8 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+                    title="Zoom out"
+                  >
+                    <ZoomOut className="w-4 h-4" />
+                  </button>
+                  <span className="text-sm text-gray-700 min-w-[60px] text-center">
+                    {Math.round(scale * 100)}%
+                  </span>
+                  <button
+                    onClick={() => setScale(prev => Math.min(prev + 0.2, 2.0))}
+                    disabled={scale >= 2.0}
+                    className="flex items-center justify-center w-8 h-8 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+                    title="Zoom in"
+                  >
+                    <ZoomIn className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => setScale(1.0)}
+                    className="text-xs px-2 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition-colors"
+                    title="Reset zoom"
+                  >
+                    Reset
+                  </button>
+                  <button
+                    onClick={() => goToPage(1)}
+                    className="text-xs px-2 py-1 bg-green-600 text-white rounded hover:bg-green-700 transition-colors ml-2"
+                    title="Torna all'inizio"
+                  >
+                    ⬆ Inizio
+                  </button>
+                </div>
+              </div>
+
               <div className="flex flex-col items-center space-y-4 w-full">
                 <Document
                   file="/Methodology.pdf"
@@ -1001,23 +1076,26 @@ const SustainableMaterialsApp = () => {
                   }
                   className="w-full"
                 >
-                  {numPages && Array.from(new Array(numPages), (el, index) => (
-                    <div key={`page_${index + 1}`} className="mb-4 border border-gray-200 rounded-lg overflow-hidden shadow-sm w-full flex justify-center">
-                      <Page
-                        pageNumber={index + 1}
-                        renderTextLayer={true}
-                        renderAnnotationLayer={true}
-                        className="max-w-full"
-                        width={window.innerWidth > 768 ? Math.min(window.innerWidth - 200, 1400) : window.innerWidth - 80}
-                      />
+                  <div className="border border-gray-200 rounded-lg overflow-auto shadow-sm w-full max-h-[70vh]">
+                    <div className="flex flex-col items-center space-y-4 p-4">
+                      {Array.from(new Array(numPages), (el, index) => (
+                        <div
+                          key={`page_${index + 1}`}
+                          ref={el => pageRefs.current[index] = el}
+                          className="shadow-lg"
+                        >
+                          <Page
+                            pageNumber={index + 1}
+                            renderTextLayer={true}
+                            renderAnnotationLayer={true}
+                            className="max-w-full"
+                            width={(window.innerWidth > 768 ? Math.min(window.innerWidth - 200, 1400) : window.innerWidth - 80) * scale}
+                          />
+                        </div>
+                      ))}
                     </div>
-                  ))}
+                  </div>
                 </Document>
-                {numPages && (
-                  <p className="text-sm text-gray-600 mt-4">
-                    Total pages: {numPages}
-                  </p>
-                )}
               </div>
             </div>
           </div>
@@ -1082,6 +1160,11 @@ const SustainableMaterialsApp = () => {
                         (material['Material Name'] || '').toLowerCase().includes(analyticsSearchQuery.toLowerCase()) ||
                         (material.Category || '').toLowerCase().includes(analyticsSearchQuery.toLowerCase())
                       )
+                      .sort((a, b) => {
+                        const nameA = (a['Material Name'] || '').toLowerCase();
+                        const nameB = (b['Material Name'] || '').toLowerCase();
+                        return nameA.localeCompare(nameB);
+                      })
                       .map((material, index) => (
                         <label key={index} className="flex items-center space-x-2 p-2 bg-gray-50 rounded cursor-pointer hover:bg-gray-100 transition-colors">
                           <input
