@@ -161,6 +161,21 @@ const MissingDataWarning = ({ excludedMaterials }) => {
   );
 };
 
+// Custom Tooltip Component for displaying full material names
+const CustomTooltip = ({ active, payload, label, unit }) => {
+  if (active && payload && payload.length) {
+    const data = payload[0].payload;
+    return (
+      <div className="bg-white p-3 border border-gray-300 rounded-lg shadow-lg" style={{ maxWidth: '300px' }}>
+        <p className="font-semibold text-gray-900 mb-1 break-words">{data.fullName || label}</p>
+        <p className="text-sm text-gray-700">
+          <span className="font-medium">{payload[0].name}:</span> {payload[0].value} {unit}
+        </p>
+      </div>
+    );
+  }
+  return null;
+};
 
 const SustainableMaterialsApp = () => {
   const [materials, setMaterials] = useState([]);
@@ -1309,6 +1324,7 @@ const SustainableMaterialsApp = () => {
                               name: (material['Material Name'] || '').length > 8 ?
                                      (material['Material Name'] || '').substring(0, 8) + '...' :
                                      (material['Material Name'] || ''),
+                              fullName: material['Material Name'] || '',
                               ghg: (() => {
                                 const ghgStr = String(material['GHG Emissions (kg CO2e/kg)'] || '').toUpperCase();
                                 // Check for N/A - return null to exclude from chart
@@ -1322,7 +1338,7 @@ const SustainableMaterialsApp = () => {
                             <CartesianGrid strokeDasharray="3 3" />
                             <XAxis dataKey="name" angle={-45} textAnchor="end" height={60} fontSize={10} />
                             <YAxis />
-                            <Tooltip formatter={(value) => [`${value} kg CO2e/kg`, 'GHG Emissions']} />
+                            <Tooltip content={<CustomTooltip unit="kg CO2e/kg" />} />
                             <Bar dataKey="ghg" fill="#ef4444" />
                           </BarChart>
                         </ResponsiveContainer>
@@ -1354,6 +1370,7 @@ const SustainableMaterialsApp = () => {
                               name: (material['Material Name'] || '').length > 8 ?
                                      (material['Material Name'] || '').substring(0, 8) + '...' :
                                      (material['Material Name'] || ''),
+                              fullName: material['Material Name'] || '',
                               water: (() => {
                                 const waterStr = String(material['Water Consumption (L/kg)'] || '').toUpperCase();
                                 // Check for N/A - return null to exclude from chart
@@ -1367,7 +1384,7 @@ const SustainableMaterialsApp = () => {
                             <CartesianGrid strokeDasharray="3 3" />
                             <XAxis dataKey="name" angle={-45} textAnchor="end" height={60} fontSize={10} />
                             <YAxis />
-                            <Tooltip formatter={(value) => [`${value} L/kg`, 'Water Consumption']} />
+                            <Tooltip content={<CustomTooltip unit="L/kg" />} />
                             <Bar dataKey="water" fill="#06b6d4" />
                           </BarChart>
                         </ResponsiveContainer>
@@ -1399,6 +1416,7 @@ const SustainableMaterialsApp = () => {
                               name: (material['Material Name'] || '').length > 8 ?
                                      (material['Material Name'] || '').substring(0, 8) + '...' :
                                      (material['Material Name'] || ''),
+                              fullName: material['Material Name'] || '',
                               energy: (() => {
                                 const energyStr = String(material['Energy Use (MJ/kg)'] || '').toUpperCase();
                                 // Check for N/A - return null to exclude from chart
@@ -1412,7 +1430,7 @@ const SustainableMaterialsApp = () => {
                             <CartesianGrid strokeDasharray="3 3" />
                             <XAxis dataKey="name" angle={-45} textAnchor="end" height={60} fontSize={10} />
                             <YAxis />
-                            <Tooltip formatter={(value) => [`${value} MJ/kg`, 'Energy Consumption']} />
+                            <Tooltip content={<CustomTooltip unit="MJ/kg" />} />
                             <Bar dataKey="energy" fill="#f59e0b" />
                           </BarChart>
                         </ResponsiveContainer>
@@ -1438,6 +1456,7 @@ const SustainableMaterialsApp = () => {
                               name: (material['Material Name'] || '').length > 8 ?
                                      (material['Material Name'] || '').substring(0, 8) + '...' :
                                      (material['Material Name'] || ''),
+                              fullName: material['Material Name'] || '',
                               fuel: (() => {
                                 const fuelStr = String(material['Fuel Consumption (MJ/kg)'] || '').toLowerCase().trim();
 
@@ -1464,7 +1483,7 @@ const SustainableMaterialsApp = () => {
                             <CartesianGrid strokeDasharray="3 3" />
                             <XAxis dataKey="name" angle={-45} textAnchor="end" height={60} fontSize={10} />
                             <YAxis domain={[0, 6]} />
-                            <Tooltip formatter={(value) => [`${value}/6`, 'Fuel Consumption Level']} />
+                            <Tooltip content={<CustomTooltip unit="/6" />} />
                             <Bar dataKey="fuel" fill="#8b5cf6" />
                           </BarChart>
                         </ResponsiveContainer>
@@ -1512,6 +1531,7 @@ const SustainableMaterialsApp = () => {
 
                             return {
                               name: material['Material Name'],
+                              fullName: material['Material Name'],
                               score: score,
                               fill: color
                             };
@@ -1530,10 +1550,7 @@ const SustainableMaterialsApp = () => {
                             label={{ value: 'Sustainability Score', angle: -90, position: 'insideLeft', fontSize: 12 }}
                             domain={[0, 10]}
                           />
-                          <Tooltip
-                            formatter={(value) => [value.toFixed(2), 'Score']}
-                            labelFormatter={(label) => `Material: ${label}`}
-                          />
+                          <Tooltip content={<CustomTooltip unit="" />} />
                           <Bar dataKey="score" radius={[8, 8, 0, 0]}>
                             {(() => {
                               const selectedMats = materials.filter(m => selectedAnalyticsMaterials.includes(m['Material Name']));
