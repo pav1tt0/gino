@@ -56,7 +56,7 @@ const Header = ({
                 }`}
               >
                 <Database className="w-4 h-4 flex-shrink-0" />
-                <span className="hidden sm:inline">Reload sustAId database</span>
+                <span className="hidden sm:inline whitespace-nowrap">Reload sustAId database</span>
                 <span className="sm:hidden">Reload DB</span>
               </button>
               {/* Tooltip */}
