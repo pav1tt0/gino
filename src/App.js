@@ -1050,7 +1050,7 @@ const SustainableMaterialsApp = () => {
                   }
                   className="w-full"
                 >
-                  <div className="border border-gray-200 rounded-lg overflow-auto shadow-sm w-full max-h-[70vh]">
+                  <div className="border border-gray-200 rounded-lg overflow-auto shadow-sm w-full max-h-[85vh] sm:max-h-[70vh]">
                     <div className="flex flex-col items-center space-y-4 p-4">
                       {Array.from(new Array(numPages), (el, index) => (
                         <div
