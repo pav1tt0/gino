@@ -23,7 +23,7 @@ const Header = ({
             </div>
           </div>
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-4">
-            <div className="relative group">
+            <div className="relative group sm:flex-1">
               <input
                 type="file"
                 accept=".csv,.sql"
@@ -33,9 +33,9 @@ const Header = ({
               />
               <label
                 htmlFor="file-upload"
-                className="flex items-center justify-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 cursor-pointer transition-colors text-sm md:text-base"
+                className="flex items-center justify-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 cursor-pointer transition-colors text-sm md:text-base font-medium h-auto w-full"
               >
-                <Upload className="w-4 h-4" />
+                <Upload className="w-4 h-4 flex-shrink-0" />
                 <span className="hidden sm:inline">Upload CSV/SQL</span>
                 <span className="sm:hidden">Upload Data</span>
               </label>
@@ -45,17 +45,17 @@ const Header = ({
                 <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 -mb-1 border-4 border-transparent border-b-gray-900"></div>
               </div>
             </div>
-            <div className="relative group">
+            <div className="relative group sm:flex-1">
               <button
                 onClick={handleReloadSupabase}
                 disabled={supabaseMaterials.length === 0}
-                className={`flex items-center justify-center space-x-2 px-4 py-2 rounded-lg transition-colors text-sm md:text-base ${
+                className={`flex items-center justify-center space-x-2 px-4 py-2 rounded-lg transition-colors text-sm md:text-base font-medium h-auto w-full ${
                   supabaseMaterials.length === 0
                     ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                     : 'bg-green-600 text-white hover:bg-green-700'
                 }`}
               >
-                <Database className="w-4 h-4" />
+                <Database className="w-4 h-4 flex-shrink-0" />
                 <span className="hidden sm:inline">Reload sustAId database</span>
                 <span className="sm:hidden">Reload DB</span>
               </button>

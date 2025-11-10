@@ -40,7 +40,7 @@ const DownloadApp = () => {
             <Download className="w-5 h-5" />
             <span>Download for Windows</span>
           </a>
-          <p className="text-xs text-gray-500 mt-2 text-center">sustaid_windows.exe (13 MB)</p>
+          <p className="text-xs text-gray-500 mt-2 text-center">sustaid_windows.exe (14.3 MB)</p>
         </div>
 
         {/* macOS Card */}
@@ -71,7 +71,7 @@ const DownloadApp = () => {
             <Download className="w-5 h-5" />
             <span>Download for macOS</span>
           </a>
-          <p className="text-xs text-gray-500 mt-2 text-center">sustaid_mac.zip (6.7 MB)</p>
+          <p className="text-xs text-gray-500 mt-2 text-center">sustaid_mac.zip (7.8 MB)</p>
         </div>
       </div>
 

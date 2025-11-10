@@ -177,29 +177,31 @@ const MaterialsDatabase = ({
               {/* 4 Key Metrics */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-1.5 sm:gap-2">
                 <div className="bg-red-50 p-1.5 sm:p-2 rounded-lg border-2 border-red-200 text-center">
-                  <div className="text-[10px] sm:text-xs font-semibold text-red-700 uppercase leading-tight">GHG Emissions</div>
+                  <div className="text-xs sm:text-sm font-semibold text-red-700 uppercase leading-tight">GHG Emissions</div>
                   <div className="text-xs sm:text-sm font-bold text-gray-900 mt-0.5">
                     {selectedMaterialDetail['GHG Emissions (kg CO2e/kg)']
-                      ? `${selectedMaterialDetail['GHG Emissions (kg CO2e/kg)']} kg`
+                      ? `${selectedMaterialDetail['GHG Emissions (kg CO2e/kg)']} kg CO2e/kg`
                       : 'N/A'}
                   </div>
                 </div>
                 <div className="bg-green-50 p-1.5 sm:p-2 rounded-lg border-2 border-green-200 text-center">
-                  <div className="text-[10px] sm:text-xs font-semibold text-green-700 uppercase leading-tight">Environment</div>
+                  <div className="text-xs sm:text-sm font-semibold text-green-700 uppercase leading-tight">Environmental Sustainability</div>
                   <div className="text-xs sm:text-sm font-bold text-gray-900 mt-0.5">
                     {selectedMaterialDetail['Environmental_Sustainability'] || 'N/A'}
                   </div>
                 </div>
                 <div className="bg-blue-50 p-1.5 sm:p-2 rounded-lg border-2 border-blue-200 text-center">
-                  <div className="text-[10px] sm:text-xs font-semibold text-blue-700 uppercase leading-tight">Durability</div>
+                  <div className="text-xs sm:text-sm font-semibold text-blue-700 uppercase leading-tight">Durability</div>
                   <div className="text-xs sm:text-sm font-bold text-gray-900 mt-0.5">
                     {selectedMaterialDetail['Durability'] || 'N/A'}
                   </div>
                 </div>
                 <div className="bg-purple-50 p-1.5 sm:p-2 rounded-lg border-2 border-purple-200 text-center">
-                  <div className="text-[10px] sm:text-xs font-semibold text-purple-700 uppercase leading-tight">Cost</div>
+                  <div className="text-xs sm:text-sm font-semibold text-purple-700 uppercase leading-tight">Cost Range</div>
                   <div className="text-xs sm:text-sm font-bold text-gray-900 mt-0.5">
-                    {selectedMaterialDetail['Cost Range ($/kg)'] || 'N/A'}
+                    {selectedMaterialDetail['Cost Range ($/kg)']
+                      ? `${selectedMaterialDetail['Cost Range ($/kg)']} $/kg`
+                      : 'N/A'}
                   </div>
                 </div>
               </div>
@@ -211,7 +213,7 @@ const MaterialsDatabase = ({
                     onClick={() => setShowApplications(!showApplications)}
                     className="w-full flex items-center justify-between p-2 sm:p-3 hover:bg-amber-100 transition-colors"
                   >
-                    <div className="text-[10px] sm:text-xs font-semibold text-amber-900 uppercase">Primary Applications</div>
+                    <div className="text-xs sm:text-sm font-semibold text-amber-900 uppercase">Primary Applications</div>
                     {showApplications ? (
                       <ChevronUp className="w-4 h-4 text-amber-900" />
                     ) : (
@@ -362,7 +364,7 @@ Can you help me understand this material better and suggest alternatives or best
                       // Create and show toast notification
                       const toast = document.createElement('div');
                       toast.id = 'ai-toast';
-                      toast.className = 'fixed top-20 right-4 bg-green-600 text-white px-6 py-4 rounded-lg shadow-lg z-50 max-w-md';
+                      toast.className = 'fixed top-4 sm:top-20 left-4 right-4 sm:left-auto sm:right-4 bg-green-600 text-white px-4 sm:px-6 py-3 sm:py-4 rounded-lg shadow-lg z-50 max-w-md';
                       toast.innerHTML = `
                         <div class="flex items-start space-x-3">
                           <svg class="w-5 h-5 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

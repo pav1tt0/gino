@@ -997,75 +997,75 @@ const SustainableMaterialsApp = () => {
 
         {activeTab === 'methodology' && (
           <div className="w-full">
-            <div className="bg-white rounded-xl shadow-lg p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-bold text-gray-900">Methodology</h2>
+            <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 mb-4 sm:mb-6">
+                <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Methodology</h2>
                 <a
                   href="/Methodology.pdf"
                   download
-                  className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                  className="flex items-center space-x-1.5 px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
                 >
-                  <Download className="w-4 h-4" />
+                  <Download className="w-3.5 h-3.5" />
                   <span>Download PDF</span>
                 </a>
               </div>
 
               {/* PDF Controls */}
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mb-4 bg-gray-50 p-3 rounded-lg sticky top-0 z-10 shadow-md">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 sm:gap-3 mb-4 bg-gray-50 p-2 sm:p-3 rounded-lg sticky top-0 z-10 shadow-md">
                 {/* Navigation Controls */}
-                <div className="flex items-center gap-2">
+                <div className="flex items-center justify-center gap-2">
                   <button
                     onClick={() => goToPage(Math.max(pageNumber - 1, 1))}
                     disabled={pageNumber <= 1}
-                    className="flex items-center justify-center w-8 h-8 bg-green-600 text-white rounded hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+                    className="flex items-center justify-center w-7 h-7 bg-green-600 text-white rounded hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
                     title="Previous page"
                   >
-                    <ChevronLeft className="w-4 h-4" />
+                    <ChevronLeft className="w-3.5 h-3.5" />
                   </button>
-                  <span className="text-sm text-gray-700 min-w-[100px] text-center">
+                  <span className="text-xs sm:text-sm text-gray-700 min-w-[80px] sm:min-w-[100px] text-center">
                     Page {pageNumber} of {numPages || '...'}
                   </span>
                   <button
                     onClick={() => goToPage(Math.min(pageNumber + 1, numPages || pageNumber))}
                     disabled={pageNumber >= numPages}
-                    className="flex items-center justify-center w-8 h-8 bg-green-600 text-white rounded hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+                    className="flex items-center justify-center w-7 h-7 bg-green-600 text-white rounded hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
                     title="Next page"
                   >
-                    <ChevronRight className="w-4 h-4" />
+                    <ChevronRight className="w-3.5 h-3.5" />
                   </button>
                 </div>
 
                 {/* Zoom Controls */}
-                <div className="flex items-center gap-2">
+                <div className="flex items-center justify-center gap-2">
                   <button
                     onClick={() => setScale(prev => Math.max(prev - 0.2, 0.5))}
                     disabled={scale <= 0.5}
-                    className="flex items-center justify-center w-8 h-8 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+                    className="flex items-center justify-center w-7 h-7 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
                     title="Zoom out"
                   >
-                    <ZoomOut className="w-4 h-4" />
+                    <ZoomOut className="w-3.5 h-3.5" />
                   </button>
-                  <span className="text-sm text-gray-700 min-w-[60px] text-center">
+                  <span className="text-xs sm:text-sm text-gray-700 min-w-[50px] sm:min-w-[60px] text-center">
                     {Math.round(scale * 100)}%
                   </span>
                   <button
                     onClick={() => setScale(prev => Math.min(prev + 0.2, 2.0))}
                     disabled={scale >= 2.0}
-                    className="flex items-center justify-center w-8 h-8 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+                    className="flex items-center justify-center w-7 h-7 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
                     title="Zoom in"
                   >
-                    <ZoomIn className="w-4 h-4" />
+                    <ZoomIn className="w-3.5 h-3.5" />
                   </button>
                   <button
                     onClick={() => setScale(1.0)}
-                    className="text-xs px-2 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition-colors"
+                    className="text-[10px] sm:text-xs px-1.5 sm:px-2 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition-colors"
                     title="Reset zoom"
                   >
                     Reset
                   </button>
                   <button
                     onClick={() => goToPage(1)}
-                    className="text-xs px-2 py-1 bg-green-600 text-white rounded hover:bg-green-700 transition-colors ml-2"
+                    className="text-[10px] sm:text-xs px-1.5 sm:px-2 py-1 bg-green-600 text-white rounded hover:bg-green-700 transition-colors ml-1 sm:ml-2"
                     title="Torna all'inizio"
                   >
                     ⬆ Top
@@ -1104,7 +1104,7 @@ const SustainableMaterialsApp = () => {
                             renderTextLayer={true}
                             renderAnnotationLayer={true}
                             className="max-w-full"
-                            width={(window.innerWidth > 768 ? Math.min(window.innerWidth - 200, 1400) : window.innerWidth - 80) * scale}
+                            width={(window.innerWidth > 768 ? Math.min(window.innerWidth - 200, 1400) : window.innerWidth - 40) * scale}
                           />
                         </div>
                       ))}
