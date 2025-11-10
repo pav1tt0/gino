@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, Filter, Download, TrendingUp, ChevronDown, ChevronUp, MessageSquare } from 'lucide-react';
+import { Search, Download, TrendingUp, ChevronDown, ChevronUp, MessageSquare } from 'lucide-react';
 
 const MaterialsDatabase = ({
   materials,
@@ -19,7 +19,6 @@ const MaterialsDatabase = ({
   setSelectedMaterials
 }) => {
   const [showApplications, setShowApplications] = useState(false);
-  const [showAITooltip, setShowAITooltip] = useState(false);
 
   return (
     <div className="space-y-6">

@@ -1,12 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Database, BarChart3, MessageSquare, RefreshCw, Filter, TrendingUp, Leaf, Zap, Upload, PieChart, Download, Camera, FileImage, X, CheckCircle, AlertCircle, BookOpen, ZoomIn, ZoomOut, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, Database, RefreshCw, PieChart, Download, Camera, FileImage, AlertCircle, ZoomIn, ZoomOut, ChevronLeft, ChevronRight } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ScatterChart, Scatter, RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Legend, PieChart as RechartsPieChart, Pie, Cell, ComposedChart, Line } from 'recharts';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
 import { fetchMaterialsFromSupabase } from './supabaseClient';
-import logo from './Logo-sustain.png';
 import toast, { Toaster } from 'react-hot-toast';
 import Papa from 'papaparse';
 import Header from './components/common/Header';
@@ -185,7 +182,6 @@ const SustainableMaterialsApp = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedMaterials, setSelectedMaterials] = useState([]);
   const [selectedMaterialDetail, setSelectedMaterialDetail] = useState(null);
-  const [methodologyContent, setMethodologyContent] = useState('');
   const [filterCategory, setFilterCategory] = useState('all');
   const [sortBy, setSortBy] = useState('name');
   const [selectedAnalyticsMaterials, setSelectedAnalyticsMaterials] = useState([]);
@@ -226,13 +222,6 @@ const SustainableMaterialsApp = () => {
     loadSupabaseMaterials();
   }, []);
 
-  // Load methodology content
-  useEffect(() => {
-    fetch('/methodology.md')
-      .then(response => response.text())
-      .then(text => setMethodologyContent(text))
-      .catch(error => console.error('Error loading methodology:', error));
-  }, []);
 
   // Handle page navigation with scroll
   const goToPage = (page) => {
@@ -250,36 +239,6 @@ const SustainableMaterialsApp = () => {
     return '#ef4444'; // Red for low sustainability (1-2)
   };
 
-  const getSustainabilityLevel = (score) => {
-    const numScore = parseFloat(score) || 0;
-    if (numScore >= 5) return 'High';
-    if (numScore >= 3) return 'Medium';
-    return 'Low';
-  };
-
-  const findSimilarMaterials = (targetMaterial, count = 3) => {
-    if (!targetMaterial) return [];
-    
-    const targetScore = parseFloat(targetMaterial['Sustainability Score']) || 0;
-    const targetCategory = targetMaterial.Category || '';
-    
-    return materials
-      .filter(m => m['Material Name'] !== targetMaterial['Material Name'])
-      .map(material => {
-        const score = parseFloat(material['Sustainability Score']) || 0;
-        const category = material.Category || '';
-        
-        let similarity = 0;
-        // Category match gives high similarity
-        if (category === targetCategory) similarity += 50;
-        // Sustainability score proximity
-        similarity += Math.max(0, 50 - Math.abs(score - targetScore) * 5);
-        
-        return { ...material, similarity };
-      })
-      .sort((a, b) => b.similarity - a.similarity)
-      .slice(0, count);
-  };
 
   // Export functions
   const exportToCSV = (data, filename) => {
@@ -423,7 +382,7 @@ const SustainableMaterialsApp = () => {
     // Step 1: Clean the column name
     const cleaned = name.trim()
       .replace(/['"]/g, '')
-      .replace(/[_\-]/g, ' ') // Replace underscores and dashes with spaces
+      .replace(/[_-]/g, ' ') // Replace underscores and dashes with spaces
       .replace(/\s+/g, ' ')    // Normalize multiple spaces
       .toLowerCase();
 
@@ -1600,7 +1559,7 @@ const SustainableMaterialsApp = () => {
                                 const durStr = (material['Durability'] || '').toLowerCase().trim();
                                 if (durStr.includes('very high')) return 6;
                                 if (durStr.includes('medium-high') || durStr.includes('medium high')) return 4;
-                                if (durStr === 'high' || durStr.includes('high') && !durStr.includes('medium')) return 5;
+                                if (durStr === 'high' || (durStr.includes('high') && !durStr.includes('medium'))) return 5;
                                 if (durStr === 'medium' || (durStr.includes('medium') && !durStr.includes('low') && !durStr.includes('high'))) return 3;
                                 if (durStr.includes('medium-low') || durStr.includes('medium low')) return 2;
                                 if (durStr.includes('low') && !durStr.includes('medium')) return 1;
@@ -1611,7 +1570,7 @@ const SustainableMaterialsApp = () => {
                                 const envStr = (material['Environmental_Sustainability'] || '').toLowerCase().trim();
                                 if (envStr.includes('very high')) return 6;
                                 if (envStr.includes('medium-high') || envStr.includes('medium high')) return 4;
-                                if (envStr === 'high' || envStr.includes('high') && !envStr.includes('medium')) return 5;
+                                if (envStr === 'high' || (envStr.includes('high') && !envStr.includes('medium'))) return 5;
                                 if (envStr === 'medium' || (envStr.includes('medium') && !envStr.includes('low') && !envStr.includes('high'))) return 3;
                                 if (envStr.includes('medium-low') || envStr.includes('medium low')) return 2;
                                 if (envStr.includes('low') && !envStr.includes('medium')) return 1;
