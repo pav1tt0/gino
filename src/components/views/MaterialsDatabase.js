@@ -364,17 +364,33 @@ Can you help me understand this material better and suggest alternatives or best
                       const toast = document.createElement('div');
                       toast.id = 'ai-toast';
                       toast.className = 'fixed top-4 sm:top-20 left-4 right-4 sm:left-auto sm:right-4 bg-green-600 text-white px-4 sm:px-6 py-3 sm:py-4 rounded-lg shadow-lg z-50 max-w-md';
-                      toast.innerHTML = `
-                        <div class="flex items-start space-x-3">
-                          <svg class="w-5 h-5 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                          </svg>
-                          <div>
-                            <p class="font-semibold">Material data copied!</p>
-                            <p class="text-sm text-green-100 mt-1">Paste it in the AI chat (Ctrl+V or Cmd+V)</p>
-                          </div>
-                        </div>
-                      `;
+                      const toastContent = document.createElement('div');
+                      toastContent.className = 'flex items-start space-x-3';
+
+                      const icon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                      icon.setAttribute('class', 'w-5 h-5 flex-shrink-0 mt-0.5');
+                      icon.setAttribute('fill', 'none');
+                      icon.setAttribute('stroke', 'currentColor');
+                      icon.setAttribute('viewBox', '0 0 24 24');
+
+                      const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                      path.setAttribute('stroke-linecap', 'round');
+                      path.setAttribute('stroke-linejoin', 'round');
+                      path.setAttribute('stroke-width', '2');
+                      path.setAttribute('d', 'M5 13l4 4L19 7');
+                      icon.appendChild(path);
+
+                      const textWrap = document.createElement('div');
+                      const title = document.createElement('p');
+                      title.className = 'font-semibold';
+                      title.textContent = 'Material data copied!';
+                      const subtitle = document.createElement('p');
+                      subtitle.className = 'text-sm text-green-100 mt-1';
+                      subtitle.textContent = 'Paste it in the AI chat (Ctrl+V or Cmd+V)';
+                      textWrap.append(title, subtitle);
+
+                      toastContent.append(icon, textWrap);
+                      toast.appendChild(toastContent);
                       document.body.appendChild(toast);
 
                       // Remove toast after 8 seconds

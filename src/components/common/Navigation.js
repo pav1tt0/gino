@@ -37,7 +37,7 @@ window.showSustAIdConfirm = (message) => {
         </div>
         <div class="flex-1">
           <h3 class="text-lg font-bold text-gray-900 mb-2">sustAId AI Assistant</h3>
-          <p class="text-sm text-gray-600 mb-6">${message}</p>
+          <p id="confirm-message" class="text-sm text-gray-600 mb-6"></p>
           <div class="flex space-x-3">
             <button id="confirm-new" class="flex-1 bg-green-600 text-white px-4 py-2.5 rounded-lg hover:bg-green-700 transition-colors font-medium text-sm">
               Open New Tab
@@ -49,6 +49,7 @@ window.showSustAIdConfirm = (message) => {
         </div>
       </div>
     `;
+    dialog.querySelector('#confirm-message').textContent = message;
 
     overlay.appendChild(dialog);
     document.body.appendChild(overlay);

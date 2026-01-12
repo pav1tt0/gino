@@ -342,13 +342,18 @@ const SustainableMaterialsApp = () => {
 
   const handleLogout = async () => {
     setAuthError('');
+    setAuthBusy(true);
     try {
-      await supabase.auth.signOut();
+      const { error } = await supabase.auth.signOut({ scope: 'local' });
+      if (error) {
+        console.error('Sign out error:', error);
+      }
+    } finally {
+      setSession(null);
       setMaterials([]);
       setFilteredMaterials([]);
       setSupabaseMaterials([]);
-    } catch (error) {
-      console.error('Sign out error:', error);
+      setAuthBusy(false);
     }
   };
 
@@ -1003,9 +1008,9 @@ const SustainableMaterialsApp = () => {
           }}
         />
         <div className="relative w-full flex items-center justify-center">
-          <div className="absolute -top-10 -left-10 w-40 h-40 bg-green-200 opacity-30 rounded-full blur-3xl"></div>
-          <div className="absolute bottom-0 right-0 w-48 h-48 bg-blue-200 opacity-30 rounded-full blur-3xl"></div>
-          <div className="absolute top-1/2 left-1/2 w-28 h-28 bg-emerald-200 opacity-30 rounded-full blur-3xl transform -translate-x-1/2 -translate-y-1/2"></div>
+          <div className="hidden sm:block absolute -top-10 -left-10 w-40 h-40 bg-green-200 opacity-30 rounded-full blur-3xl"></div>
+          <div className="hidden sm:block absolute bottom-0 right-0 w-48 h-48 bg-blue-200 opacity-30 rounded-full blur-3xl"></div>
+          <div className="hidden sm:block absolute top-1/2 left-1/2 w-28 h-28 bg-emerald-200 opacity-30 rounded-full blur-3xl transform -translate-x-1/2 -translate-y-1/2"></div>
           <AccessGate
             onSignIn={handleSignIn}
             onSignUp={handleSignUp}
