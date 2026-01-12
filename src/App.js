@@ -3,7 +3,7 @@ import { Search, Database, RefreshCw, PieChart, Download, Camera, FileImage, Ale
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ScatterChart, Scatter, RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Legend, PieChart as RechartsPieChart, Pie, Cell, ComposedChart, Line } from 'recharts';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
-import { fetchMaterialsFromSupabase } from './supabaseClient';
+import { checkInviteCode, fetchMaterialsFromSupabase, supabase, supabaseConfigOk } from './supabaseClient';
 import toast, { Toaster } from 'react-hot-toast';
 import Papa from 'papaparse';
 import Header from './components/common/Header';
@@ -13,6 +13,7 @@ import DataPreviewModal from './components/modals/DataPreviewModal';
 import Dashboard from './components/views/Dashboard';
 import MaterialsDatabase from './components/views/MaterialsDatabase';
 import DownloadApp from './components/views/DownloadApp';
+import AccessGate from './components/auth/AccessGate';
 import { Document, Page, pdfjs } from 'react-pdf';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
@@ -175,6 +176,10 @@ const CustomTooltip = ({ active, payload, label, unit }) => {
 };
 
 const SustainableMaterialsApp = () => {
+  const [session, setSession] = useState(null);
+  const [authLoading, setAuthLoading] = useState(true);
+  const [authBusy, setAuthBusy] = useState(false);
+  const [authError, setAuthError] = useState('');
   const [materials, setMaterials] = useState([]);
   const [filteredMaterials, setFilteredMaterials] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -199,8 +204,45 @@ const SustainableMaterialsApp = () => {
   const [scale, setScale] = useState(1.0);
   const pageRefs = React.useRef([]);
 
-  // Load materials from Supabase on mount
   useEffect(() => {
+    let isMounted = true;
+
+    const initAuth = async () => {
+      try {
+        const { data, error } = await supabase.auth.getSession();
+        if (error) {
+          console.error('Auth session error:', error);
+        }
+        if (isMounted) {
+          setSession(data?.session || null);
+        }
+      } finally {
+        if (isMounted) {
+          setAuthLoading(false);
+        }
+      }
+    };
+
+    initAuth();
+
+    const { data: authListener } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      if (isMounted) {
+        setSession(nextSession);
+      }
+    });
+
+    return () => {
+      isMounted = false;
+      authListener?.subscription?.unsubscribe();
+    };
+  }, []);
+
+  // Load materials from Supabase when authenticated
+  useEffect(() => {
+    if (!session) {
+      return;
+    }
+
     const loadSupabaseMaterials = async () => {
       try {
         setLoading(true);
@@ -220,7 +262,7 @@ const SustainableMaterialsApp = () => {
     };
 
     loadSupabaseMaterials();
-  }, []);
+  }, [session]);
 
 
   // Handle page navigation with scroll
@@ -237,6 +279,77 @@ const SustainableMaterialsApp = () => {
     if (numScore >= 5) return '#10b981'; // Green for high sustainability (5-6)
     if (numScore >= 3) return '#f59e0b'; // Yellow for medium sustainability (3-4)
     return '#ef4444'; // Red for low sustainability (1-2)
+  };
+
+  const handleSignIn = async ({ email, password }) => {
+    setAuthError('');
+    if (!supabaseConfigOk) {
+      setAuthError('Supabase is not configured. Please set REACT_APP_SUPABASE_URL and REACT_APP_SUPABASE_ANON_KEY.');
+      return;
+    }
+
+    setAuthBusy(true);
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email: String(email || '').trim(),
+        password: String(password || '')
+      });
+
+      if (error) {
+        setAuthError(error.message);
+      }
+    } catch (error) {
+      setAuthError('Login failed. Please try again.');
+      console.error('Sign in error:', error);
+    } finally {
+      setAuthBusy(false);
+    }
+  };
+
+  const handleSignUp = async ({ email, password, inviteCode }) => {
+    setAuthError('');
+    if (!supabaseConfigOk) {
+      setAuthError('Supabase is not configured. Please set REACT_APP_SUPABASE_URL and REACT_APP_SUPABASE_ANON_KEY.');
+      return;
+    }
+
+    setAuthBusy(true);
+    try {
+      const inviteOk = await checkInviteCode(inviteCode);
+      if (!inviteOk) {
+        setAuthError('Invalid invite code.');
+        return;
+      }
+
+      const { error } = await supabase.auth.signUp({
+        email: String(email || '').trim(),
+        password: String(password || '')
+      });
+
+      if (error) {
+        setAuthError(error.message);
+        return;
+      }
+
+      toast.success('Account created. You are now signed in.');
+    } catch (error) {
+      setAuthError('Sign up failed. Please try again.');
+      console.error('Sign up error:', error);
+    } finally {
+      setAuthBusy(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    setAuthError('');
+    try {
+      await supabase.auth.signOut();
+      setMaterials([]);
+      setFilteredMaterials([]);
+      setSupabaseMaterials([]);
+    } catch (error) {
+      console.error('Sign out error:', error);
+    }
   };
 
 
@@ -845,6 +958,66 @@ const SustainableMaterialsApp = () => {
     : 0;
   const highSustainability = materials.filter(m => parseFloat(m['Sustainability Score']) === 6).length;
 
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center">
+        <div className="text-center">
+          <RefreshCw className="w-8 h-8 animate-spin text-green-600 mx-auto mb-4" />
+          <p className="text-lg text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!session) {
+    return (
+      <div
+        className="min-h-screen flex items-center justify-center p-4"
+        style={{
+          background:
+            'radial-gradient(circle at 20% 20%, rgba(34,197,94,0.18), transparent 45%), radial-gradient(circle at 80% 20%, rgba(59,130,246,0.16), transparent 45%), linear-gradient(180deg, #f8fafc 0%, #eef2f7 100%)'
+        }}
+      >
+        <Toaster
+          position="top-right"
+          toastOptions={{
+            duration: 3000,
+            style: {
+              background: '#363636',
+              color: '#fff',
+            },
+            success: {
+              duration: 3000,
+              iconTheme: {
+                primary: '#10b981',
+                secondary: '#fff',
+              },
+            },
+            error: {
+              duration: 4000,
+              iconTheme: {
+                primary: '#ef4444',
+                secondary: '#fff',
+              },
+            },
+          }}
+        />
+        <div className="relative w-full flex items-center justify-center">
+          <div className="absolute -top-10 -left-10 w-40 h-40 bg-green-200 opacity-30 rounded-full blur-3xl"></div>
+          <div className="absolute bottom-0 right-0 w-48 h-48 bg-blue-200 opacity-30 rounded-full blur-3xl"></div>
+          <div className="absolute top-1/2 left-1/2 w-28 h-28 bg-emerald-200 opacity-30 rounded-full blur-3xl transform -translate-x-1/2 -translate-y-1/2"></div>
+          <AccessGate
+            onSignIn={handleSignIn}
+            onSignUp={handleSignUp}
+            authBusy={authBusy}
+            authError={authError}
+            supabaseConfigOk={supabaseConfigOk}
+          />
+        </div>
+      </div>
+    );
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center">
@@ -907,6 +1080,8 @@ const SustainableMaterialsApp = () => {
         handleFileUpload={handleFileUpload}
         handleReloadSupabase={handleReloadSupabase}
         supabaseMaterials={supabaseMaterials}
+        userEmail={session?.user?.email || ''}
+        onLogout={handleLogout}
       />
 
       {/* Navigation */}

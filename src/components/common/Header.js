@@ -5,7 +5,9 @@ import logo from '../../Logo-sustain.png';
 const Header = ({
   handleFileUpload,
   handleReloadSupabase,
-  supabaseMaterials
+  supabaseMaterials,
+  userEmail,
+  onLogout
 }) => {
   return (
     <header className="bg-white shadow-lg border-b border-green-100">
@@ -65,6 +67,20 @@ const Header = ({
                 <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 -mb-1 border-4 border-transparent border-b-gray-900"></div>
               </div>
             </div>
+            {userEmail && onLogout && (
+              <div className="flex items-center justify-between sm:justify-start gap-2 sm:gap-3">
+                <div className="flex items-center space-x-2 bg-green-50 text-green-800 px-3 py-2 rounded-lg text-xs sm:text-sm font-medium">
+                  <span className="inline-block w-2 h-2 bg-green-600 rounded-full"></span>
+                  <span className="truncate max-w-[180px] sm:max-w-[220px]">{userEmail}</span>
+                </div>
+                <button
+                  onClick={onLogout}
+                  className="px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-xs sm:text-sm font-semibold"
+                >
+                  Logout
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>

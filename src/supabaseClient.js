@@ -3,6 +3,8 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = process.env.REACT_APP_SUPABASE_URL;
 const supabaseAnonKey = process.env.REACT_APP_SUPABASE_ANON_KEY;
 
+export const supabaseConfigOk = Boolean(supabaseUrl && supabaseAnonKey);
+
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 // Map Supabase column names to App expected format
@@ -84,4 +86,22 @@ export const fetchMaterialsFromSupabase = async (tableName = 'materials') => {
     console.error('Supabase fetch error:', error);
     throw error;
   }
+};
+
+export const checkInviteCode = async (inviteCode) => {
+  const trimmed = String(inviteCode || '').trim();
+  if (!trimmed) {
+    return false;
+  }
+
+  const { data, error } = await supabase.rpc('check_invite_code', {
+    code: trimmed
+  });
+
+  if (error) {
+    console.error('Invite code check failed:', error);
+    throw error;
+  }
+
+  return data === true;
 };
