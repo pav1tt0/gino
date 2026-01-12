@@ -19,7 +19,7 @@ import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
 
 // Configure PDF.js worker
-pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
+pdfjs.GlobalWorkerOptions.workerSrc = `${process.env.PUBLIC_URL}/pdf.worker.min.mjs`;
 
 // Chart Export Buttons Component
 const ChartExportButtons = ({ chartRef, chartId, filename }) => {
@@ -203,6 +203,19 @@ const SustainableMaterialsApp = () => {
   const [pageNumber, setPageNumber] = useState(1);
   const [scale, setScale] = useState(1.0);
   const pageRefs = React.useRef([]);
+  const [viewportWidth, setViewportWidth] = useState(() => (typeof window !== 'undefined' ? window.innerWidth : 1200));
+  const [isSmallScreen, setIsSmallScreen] = useState(() => (typeof window !== 'undefined' ? window.innerWidth < 768 : false));
+
+  useEffect(() => {
+    const handleResize = () => {
+      const width = window.innerWidth;
+      setViewportWidth(width);
+      setIsSmallScreen(width < 768);
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
@@ -1243,7 +1256,7 @@ const SustainableMaterialsApp = () => {
                             renderTextLayer={true}
                             renderAnnotationLayer={true}
                             className="max-w-full"
-                            width={(window.innerWidth > 768 ? Math.min(window.innerWidth - 200, 1400) : window.innerWidth - 40) * scale}
+                            width={(isSmallScreen ? Math.max(viewportWidth - 40, 280) : Math.min(viewportWidth - 200, 1400)) * scale}
                           />
                         </div>
                       ))}
