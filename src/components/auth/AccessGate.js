@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Lock, Mail, KeyRound, LogIn, UserPlus, ShieldCheck } from 'lucide-react';
 import logo from '../../Logo-sustain.png';
 
-const AccessGate = ({ onSignIn, onSignUp, authBusy, authError, supabaseConfigOk }) => {
+const AccessGate = ({ onSignIn, onSignUp, onClearAuthError, authBusy, authError, supabaseConfigOk }) => {
   const [mode, setMode] = useState('gate');
   const [localError, setLocalError] = useState('');
 
@@ -16,6 +16,9 @@ const AccessGate = ({ onSignIn, onSignUp, authBusy, authError, supabaseConfigOk 
 
   useEffect(() => {
     setLocalError('');
+    if (onClearAuthError) {
+      onClearAuthError();
+    }
   }, [mode]);
 
   const handleSubmitSignIn = async (event) => {
@@ -110,7 +113,7 @@ const AccessGate = ({ onSignIn, onSignUp, authBusy, authError, supabaseConfigOk 
           </div>
         )}
 
-        {authError && (
+        {authError && mode !== 'gate' && (
           <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-3 py-2">
             {authError}
           </div>

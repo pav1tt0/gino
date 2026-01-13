@@ -1027,6 +1027,7 @@ const SustainableMaterialsApp = () => {
           <AccessGate
             onSignIn={handleSignIn}
             onSignUp={handleSignUp}
+            onClearAuthError={() => setAuthError('')}
             authBusy={authBusy}
             authError={authError}
             supabaseConfigOk={supabaseConfigOk}
