@@ -990,7 +990,7 @@ const SustainableMaterialsApp = () => {
   if (!session) {
     return (
       <div
-        className="min-h-screen flex items-center justify-center p-4"
+        className="min-h-screen flex flex-col p-4"
         style={{
           background:
             'radial-gradient(circle at 20% 20%, rgba(34,197,94,0.18), transparent 45%), radial-gradient(circle at 80% 20%, rgba(59,130,246,0.16), transparent 45%), linear-gradient(180deg, #f8fafc 0%, #eef2f7 100%)'
@@ -1020,7 +1020,7 @@ const SustainableMaterialsApp = () => {
             },
           }}
         />
-        <div className="relative w-full flex items-center justify-center">
+        <div className="relative w-full flex-1 flex items-center justify-center">
           <div className="hidden sm:block absolute -top-10 -left-10 w-40 h-40 bg-green-200 opacity-30 rounded-full blur-3xl"></div>
           <div className="hidden sm:block absolute bottom-0 right-0 w-48 h-48 bg-blue-200 opacity-30 rounded-full blur-3xl"></div>
           <div className="hidden sm:block absolute top-1/2 left-1/2 w-28 h-28 bg-emerald-200 opacity-30 rounded-full blur-3xl transform -translate-x-1/2 -translate-y-1/2"></div>
@@ -1031,6 +1031,16 @@ const SustainableMaterialsApp = () => {
             authError={authError}
             supabaseConfigOk={supabaseConfigOk}
           />
+        </div>
+        <div className="text-center text-sm text-gray-600 mt-6">
+          <p className="mb-1">
+            Developed by <span className="font-semibold text-green-600">Alessia Vittori</span> © 2025
+          </p>
+          <p>
+            <a href="mailto:info@sustaid.net" className="text-green-600 hover:text-green-700 transition-colors">
+              info@sustaid.net
+            </a>
+          </p>
         </div>
       </div>
     );

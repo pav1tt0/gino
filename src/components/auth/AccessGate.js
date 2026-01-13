@@ -75,7 +75,7 @@ const AccessGate = ({ onSignIn, onSignUp, authBusy, authError, supabaseConfigOk 
               </div>
 
               <div className="bg-green-50 border border-green-200 rounded-xl px-4 py-3 text-sm text-green-700">
-                Access is limited to sustainable fashion professionals. Sign in to continue or request access with an
+                Access is limited to fashion sustainability professionals. Sign in to continue or request access with an
                 invite code.
               </div>
 
