@@ -12,7 +12,7 @@ const Header = ({
   return (
     <header className="bg-white shadow-lg border-b border-green-100">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex flex-col md:flex-row md:justify-between md:items-center py-4 gap-4">
+        <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center py-4 gap-4">
           <div className="flex items-center space-x-3 md:space-x-4">
             <div className="p-1">
               <img src={logo} alt="sustAId Logo" className="w-16 h-16 md:w-20 md:h-20 object-contain" />
@@ -24,8 +24,8 @@ const Header = ({
               <p className="text-xs md:text-base text-gray-600 hidden sm:block">AI-Powered Sustainable Material Selection</p>
             </div>
           </div>
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-4">
-            <div className="relative group sm:flex-1">
+          <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-2 sm:gap-4 lg:justify-end">
+            <div className="relative group sm:flex-1 md:flex-none md:min-w-[190px]">
               <input
                 type="file"
                 accept=".csv,.sql"
@@ -47,7 +47,7 @@ const Header = ({
                 <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 -mb-1 border-4 border-transparent border-b-gray-900"></div>
               </div>
             </div>
-            <div className="relative group sm:flex-1">
+            <div className="relative group sm:flex-1 md:flex-none md:min-w-[220px]">
               <button
                 onClick={handleReloadSupabase}
                 disabled={supabaseMaterials.length === 0}
@@ -68,14 +68,14 @@ const Header = ({
               </div>
             </div>
             {userEmail && onLogout && (
-              <div className="flex items-center justify-between sm:justify-start gap-2 sm:gap-3">
+              <div className="flex items-center justify-between sm:justify-start gap-2 sm:gap-3 sm:flex-none">
                 <div className="flex items-center space-x-2 bg-green-50 text-green-800 px-3 py-2 rounded-lg text-xs sm:text-sm font-medium">
                   <span className="inline-block w-2 h-2 bg-green-600 rounded-full"></span>
-                  <span className="truncate max-w-[180px] sm:max-w-[220px]">{userEmail}</span>
+                  <span className="truncate max-w-[180px] sm:max-w-[200px]">{userEmail}</span>
                 </div>
                 <button
                   onClick={onLogout}
-                  className="px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-xs sm:text-sm font-semibold"
+                  className="px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-xs sm:text-sm font-semibold whitespace-nowrap"
                 >
                   Logout
                 </button>
