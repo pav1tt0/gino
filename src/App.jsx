@@ -19,7 +19,7 @@ import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
 
 // Configure PDF.js worker
-pdfjs.GlobalWorkerOptions.workerSrc = `${process.env.PUBLIC_URL}/pdf.worker.min.mjs`;
+pdfjs.GlobalWorkerOptions.workerSrc = `${import.meta.env.BASE_URL}pdf.worker.min.mjs`;
 
 // Chart Export Buttons Component
 const ChartExportButtons = ({ chartRef, chartId, filename }) => {
@@ -297,7 +297,7 @@ const SustainableMaterialsApp = () => {
   const handleSignIn = async ({ email, password }) => {
     setAuthError('');
     if (!supabaseConfigOk) {
-      setAuthError('Supabase is not configured. Please set REACT_APP_SUPABASE_URL and REACT_APP_SUPABASE_ANON_KEY.');
+      setAuthError('Supabase is not configured. Please set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.');
       return;
     }
 
@@ -322,7 +322,7 @@ const SustainableMaterialsApp = () => {
   const handleSignUp = async ({ email, password, inviteCode }) => {
     setAuthError('');
     if (!supabaseConfigOk) {
-      setAuthError('Supabase is not configured. Please set REACT_APP_SUPABASE_URL and REACT_APP_SUPABASE_ANON_KEY.');
+      setAuthError('Supabase is not configured. Please set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.');
       return;
     }
 

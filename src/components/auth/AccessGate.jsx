@@ -103,7 +103,7 @@ const AccessGate = ({ onSignIn, onSignUp, onClearAuthError, authBusy, authError,
         <div className="px-6 py-6 md:px-7 md:py-7 space-y-4">
         {!supabaseConfigOk && (
           <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 text-sm rounded-lg px-3 py-2">
-            Supabase is not configured. Set REACT_APP_SUPABASE_URL and REACT_APP_SUPABASE_ANON_KEY.
+            Supabase is not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.
           </div>
         )}
 
