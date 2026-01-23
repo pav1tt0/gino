@@ -2273,6 +2273,17 @@ const SustainableMaterialsApp = () => {
                 <h2 className="text-xl font-bold text-gray-900 mb-4">Material Comparison</h2>
                 <p className="text-gray-600">Select materials from the database to compare them here.</p>
               </div>
+            ) : selectedMaterials.length === 1 ? (
+              <div className="bg-white rounded-xl shadow-lg p-6">
+                <h2 className="text-xl font-bold text-gray-900 mb-4">Material Comparison</h2>
+                <div className="flex items-start space-x-3 rounded-lg border border-yellow-200 bg-yellow-50 p-4 text-sm text-yellow-800">
+                  <AlertCircle className="w-5 h-5 text-yellow-500 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <p className="font-medium">Only 1 material selected.</p>
+                    <p className="mt-1">Please select at least 2 materials to enable comparison.</p>
+                  </div>
+                </div>
+              </div>
             ) : (
               <>
                 {/* Header */}
