@@ -46,8 +46,10 @@
 
 4. **Add your Supabase credentials to `.env`**
    ```env
-   VITE_SUPABASE_URL=your_supabase_project_url
-   VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+VITE_SUPABASE_URL=your_supabase_project_url
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+VITE_SUPABASE_SCHEMA=public
+VITE_SUPABASE_TABLE=materials
    ```
 
    Get these values from your [Supabase Dashboard](https://app.supabase.com) → Project Settings → API
@@ -99,7 +101,7 @@ Runs the test suite using Vitest
 |------------|---------|---------|
 | **React** | 19.1.1 | UI framework |
 | **Vite** | 7.1.3 | Build tool & dev server |
-| **Tailwind CSS** | 2.2.19 | Styling |
+| **Tailwind CSS** | 3.4.19 | Styling |
 | **Supabase** | 2.74.0 | Backend & authentication |
 | **Recharts** | 3.2.1 | Data visualization |
 | **Lucide React** | 0.544.0 | Icons |
@@ -108,6 +110,8 @@ Runs the test suite using Vitest
 | **PapaParse** | 5.5.3 | CSV parsing |
 
 ## 📁 Project Structure
+
+See `ARCHITECTURE.md` for a concise overview of responsibilities and flow.
 
 ```
 gino/
@@ -120,7 +124,7 @@ gino/
 │   │   └── views/      # Main view components
 │   ├── App.jsx         # Main application component
 │   ├── App.css         # Application styles
-│   ├── index.js        # Entry point
+│   ├── index.jsx       # Entry point
 │   ├── index.css       # Global styles
 │   └── supabaseClient.js  # Supabase configuration
 ├── .env                # Environment variables (not in git)

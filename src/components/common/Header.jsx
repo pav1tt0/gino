@@ -7,7 +7,8 @@ const Header = ({
   handleReloadSupabase,
   supabaseMaterials,
   userEmail,
-  onLogout
+  onLogout,
+  isLoading
 }) => {
   return (
     <header className="bg-white shadow-lg border-b border-green-100">
@@ -50,20 +51,22 @@ const Header = ({
             <div className="relative group sm:flex-1 md:flex-none md:min-w-[220px]">
               <button
                 onClick={handleReloadSupabase}
-                disabled={supabaseMaterials.length === 0}
+                disabled={isLoading}
                 className={`flex items-center justify-center space-x-2 px-4 py-2 rounded-lg transition-colors text-sm md:text-base font-medium h-auto w-full ${
-                  supabaseMaterials.length === 0
+                  isLoading
                     ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                     : 'bg-green-600 text-white hover:bg-green-700'
                 }`}
               >
                 <Database className="w-4 h-4 flex-shrink-0" />
-                <span className="hidden sm:inline whitespace-nowrap">Reload sustAId database</span>
-                <span className="sm:hidden">Reload DB</span>
+                <span className="hidden sm:inline whitespace-nowrap">
+                  {supabaseMaterials.length === 0 ? 'Load sustAId database' : 'Reload sustAId database'}
+                </span>
+                <span className="sm:hidden">{supabaseMaterials.length === 0 ? 'Load DB' : 'Reload DB'}</span>
               </button>
               {/* Tooltip */}
               <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-50 shadow-lg">
-                {supabaseMaterials.length === 0 ? 'No database loaded' : 'Reload original sustAId database'}
+                {isLoading ? 'Loading from Supabase...' : 'Load original sustAId database'}
                 <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 -mb-1 border-4 border-transparent border-b-gray-900"></div>
               </div>
             </div>

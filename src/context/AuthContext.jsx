@@ -16,6 +16,13 @@ export const AuthProvider = ({ children }) => {
         let isMounted = true;
 
         const initAuth = async () => {
+            if (!supabaseConfigOk || !supabase) {
+                if (isMounted) {
+                    setSession(null);
+                    setLoading(false);
+                }
+                return;
+            }
             try {
                 const { data, error } = await supabase.auth.getSession();
                 if (error) {
@@ -33,11 +40,15 @@ export const AuthProvider = ({ children }) => {
 
         initAuth();
 
-        const { data: authListener } = supabase.auth.onAuthStateChange((_event, nextSession) => {
-            if (isMounted) {
-                setSession(nextSession);
-            }
-        });
+        let authListener;
+        if (supabase) {
+            const { data } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+                if (isMounted) {
+                    setSession(nextSession);
+                }
+            });
+            authListener = data;
+        }
 
         return () => {
             isMounted = false;
@@ -47,7 +58,7 @@ export const AuthProvider = ({ children }) => {
 
     const signIn = async ({ email, password }) => {
         setError('');
-        if (!supabaseConfigOk) {
+        if (!supabaseConfigOk || !supabase) {
             setError('Supabase is not configured. Please set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.');
             return false;
         }
@@ -75,7 +86,7 @@ export const AuthProvider = ({ children }) => {
 
     const signUp = async ({ email, password, inviteCode }) => {
         setError('');
-        if (!supabaseConfigOk) {
+        if (!supabaseConfigOk || !supabase) {
             setError('Supabase is not configured. Please set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.');
             return false;
         }
@@ -113,9 +124,11 @@ export const AuthProvider = ({ children }) => {
         setError('');
         setBusy(true);
         try {
-            const { error } = await supabase.auth.signOut({ scope: 'local' });
-            if (error) {
-                console.error('Sign out error:', error);
+            if (supabase) {
+                const { error } = await supabase.auth.signOut({ scope: 'local' });
+                if (error) {
+                    console.error('Sign out error:', error);
+                }
             }
         } finally {
             setSession(null);

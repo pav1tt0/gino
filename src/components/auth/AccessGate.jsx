@@ -57,50 +57,17 @@ const AccessGate = ({ onSignIn, onSignUp, onClearAuthError, authBusy, authError,
     });
   };
 
-  const showAside = mode === 'gate';
+  const isGate = mode === 'gate';
 
   return (
-    <div className={`w-full ${showAside ? 'max-w-3xl' : 'max-w-md'} bg-white shadow-2xl rounded-2xl border border-gray-200 overflow-hidden`}>
-      <div className={showAside ? 'grid md:grid-cols-[1.1fr_1fr]' : ''}>
-        {showAside && (
-          <div className="relative overflow-hidden bg-white text-green-800 px-6 py-10 md:px-10 border-b md:border-b-0 md:border-r border-green-100">
-            <div className="absolute -top-10 -right-10 w-32 h-32 bg-green-100/60 rounded-full"></div>
-            <div className="absolute -bottom-14 -left-10 w-40 h-40 bg-emerald-100/60 rounded-full"></div>
-            <div className="relative space-y-6">
-              <div className="flex flex-col items-center text-center space-y-4">
-                <img src={logo} alt="sustAId Logo" className="w-20 h-20 object-contain" />
-                <div>
-                  <h1 className="text-2xl font-semibold tracking-tight text-green-800">
-                    Welcome to sust<span className="italic">AI</span>d
-                  </h1>
-                  <p className="text-sm text-green-700 mt-1">AI-Powered Sustainable Material Selection</p>
-                </div>
-              </div>
-
-              <div className="bg-green-50 border border-green-200 rounded-xl px-4 py-3 text-sm text-green-700">
-                Access is limited to fashion sustainability professionals. Sign in to continue or request access with an
-                invite code.
-              </div>
-
-              <div className="flex flex-wrap items-center justify-center gap-2 text-xs sm:text-sm text-green-800">
-                <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-green-50 border border-green-200">
-                  <ShieldCheck className="w-4 h-4 text-green-700" />
-                  Professional platform
-                </span>
-                <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-green-50 border border-green-200">
-                  <ShieldCheck className="w-4 h-4 text-green-700" />
-                  Invite-only access
-                </span>
-                <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-green-50 border border-green-200">
-                  <ShieldCheck className="w-4 h-4 text-green-700" />
-                  Immediate activation
-                </span>
-              </div>
-            </div>
-          </div>
-        )}
-
-        <div className="px-6 py-6 md:px-7 md:py-7 space-y-4">
+    <div className={`w-full ${isGate ? 'max-w-2xl' : 'max-w-md'} bg-white shadow-2xl rounded-2xl border border-gray-200 overflow-hidden relative`}>
+      {isGate && (
+        <>
+          <div className="absolute -top-16 -right-16 w-40 h-40 bg-green-100/70 rounded-full"></div>
+          <div className="absolute -bottom-20 -left-16 w-48 h-48 bg-emerald-100/70 rounded-full"></div>
+        </>
+      )}
+      <div className="relative px-6 py-6 md:px-8 md:py-8 space-y-4">
         {!supabaseConfigOk && (
           <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 text-sm rounded-lg px-3 py-2">
             Supabase is not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.
@@ -119,9 +86,41 @@ const AccessGate = ({ onSignIn, onSignUp, onClearAuthError, authBusy, authError,
           </div>
         )}
 
-        {mode === 'gate' && (
-          <div className="space-y-5">
-            <div className="space-y-2">
+        {isGate && (
+          <div className="space-y-6">
+            <div className="flex flex-col items-center text-center space-y-3">
+              <div className="w-16 h-16 rounded-full bg-white shadow-lg flex items-center justify-center">
+                <img src={logo} alt="sustAId Logo" className="w-10 h-10 object-contain" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-semibold tracking-tight text-green-800">
+                  Welcome to sust<span className="italic">AI</span>d
+                </h1>
+                <p className="text-sm text-green-700 mt-1">AI-Powered Sustainable Material Selection</p>
+              </div>
+            </div>
+
+            <div className="bg-green-50 border border-green-200 rounded-xl px-4 py-3 text-sm text-green-700 text-center">
+              Access is limited to fashion sustainability professionals. Sign in to continue or request access with an
+              invite code.
+            </div>
+
+            <div className="flex flex-wrap items-center justify-center gap-2 text-xs sm:text-sm text-green-800">
+              <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-green-50 border border-green-200">
+                <ShieldCheck className="w-4 h-4 text-green-700" />
+                Professional platform
+              </span>
+              <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-green-50 border border-green-200">
+                <ShieldCheck className="w-4 h-4 text-green-700" />
+                Invite-only access
+              </span>
+              <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-green-50 border border-green-200">
+                <ShieldCheck className="w-4 h-4 text-green-700" />
+                Immediate activation
+              </span>
+            </div>
+
+            <div className="space-y-2 text-left">
               <h2 className="text-lg font-semibold text-gray-900">Welcome back</h2>
               <p className="text-sm text-gray-600">
                 Sign in to continue. If you received an invite, request access to create your account.
@@ -312,7 +311,6 @@ const AccessGate = ({ onSignIn, onSignUp, onClearAuthError, authBusy, authError,
           </form>
         )}
         </div>
-      </div>
     </div>
   );
 };

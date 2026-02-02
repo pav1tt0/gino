@@ -1,24 +1,50 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Search, Download, TrendingUp, ChevronDown, ChevronUp, MessageSquare } from 'lucide-react';
+import { exportToCSV, exportToJSON } from '../../utils/exportUtils';
+import { getSustainabilityColor } from '../../utils/materialUtils';
 
 const MaterialsDatabase = ({
   materials,
-  searchQuery,
-  setSearchQuery,
-  filterCategory,
-  setFilterCategory,
-  sortBy,
-  setSortBy,
-  filteredMaterials,
-  exportToCSV,
-  exportToJSON,
-  getSustainabilityColor,
-  setSelectedMaterialDetail,
-  selectedMaterialDetail,
   selectedMaterials,
   setSelectedMaterials
 }) => {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterCategory, setFilterCategory] = useState('all');
+  const [sortBy, setSortBy] = useState('name');
   const [showApplications, setShowApplications] = useState(false);
+  const [selectedMaterialDetail, setSelectedMaterialDetail] = useState(null);
+
+  const filteredMaterials = useMemo(() => {
+    let result = materials;
+
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      result = result.filter(material =>
+        Object.values(material).some(val =>
+          String(val).toLowerCase().includes(query)
+        )
+      );
+    }
+
+    if (filterCategory !== 'all') {
+      result = result.filter(material => material.Category === filterCategory);
+    }
+
+    // Clone to Sort result
+    result = [...result];
+
+    if (sortBy === 'name') {
+      result.sort((a, b) => (a['Material Name'] || '').localeCompare(b['Material Name'] || ''));
+    } else if (sortBy === 'sustainability') {
+      result.sort((a, b) => {
+        const scoreA = parseFloat(a['Sustainability Score']) || 0;
+        const scoreB = parseFloat(b['Sustainability Score']) || 0;
+        return scoreB - scoreA; // Descending
+      });
+    }
+
+    return result;
+  }, [materials, searchQuery, filterCategory, sortBy]);
 
   return (
     <div className="space-y-6">
@@ -161,7 +187,7 @@ const MaterialsDatabase = ({
                     {selectedMaterialDetail.Category || 'N/A'}
                   </span>
                   <div className={`px-2 py-1 rounded-lg text-xs font-bold text-white whitespace-nowrap`}
-                       style={{backgroundColor: getSustainabilityColor(selectedMaterialDetail['Sustainability Score'])}}>
+                    style={{ backgroundColor: getSustainabilityColor(selectedMaterialDetail['Sustainability Score']) }}>
                     {selectedMaterialDetail['Sustainability Score'] || 'N/A'}
                   </div>
                   <button
@@ -336,149 +362,138 @@ const MaterialsDatabase = ({
                 </button>
                 <div className="relative group w-full">
                   <button
-                  onClick={async () => {
-                    // Build context for AI Assistant
-                    const material = selectedMaterialDetail;
-                    const prompt = `I need information about ${material['Material Name']} (${material['Category']}).
+                    onClick={async () => {
+                      // Build context for AI Assistant
+                      const material = selectedMaterialDetail;
+                      const prompt = `I need information about ${material['Material Name']} (${material['Category']}).\n\nKey properties:\n- Sustainability Score: ${material['Sustainability Score'] || material['Sustainability Rating'] || 'N/A'}\n- GHG Emissions: ${material['GHG Emissions (kg CO2e/kg)'] || 'N/A'} kg CO2e/kg\n- Water Consumption: ${material['Water Consumption (L/kg)'] || 'N/A'} L/kg\n- Energy Use: ${material['Energy Use (MJ/kg)'] || 'N/A'} MJ/kg\n- Durability: ${material['Durability'] || 'N/A'}\n - Cost Range: ${material['Cost Range ($/kg)'] || 'N/A'}\n- Primary Applications: ${material['Primary Applications'] || 'N/A'}\n\nCan you help me understand this material better and suggest alternatives or best use cases?`;
 
-Key properties:
-- Sustainability Score: ${material['Sustainability Score'] || material['Sustainability Rating'] || 'N/A'}
-- GHG Emissions: ${material['GHG Emissions (kg CO2e/kg)'] || 'N/A'} kg CO2e/kg
-- Water Consumption: ${material['Water Consumption (L/kg)'] || 'N/A'} L/kg
-- Energy Use: ${material['Energy Use (MJ/kg)'] || 'N/A'} MJ/kg
-- Durability: ${material['Durability'] || 'N/A'}
-- Cost Range: ${material['Cost Range ($/kg)'] || 'N/A'}
-- Primary Applications: ${material['Primary Applications'] || 'N/A'}
+                      // Copy to clipboard
+                      try {
+                        await navigator.clipboard.writeText(prompt);
 
-Can you help me understand this material better and suggest alternatives or best use cases?`;
+                        // Remove any existing toast to avoid accumulation
+                        const existingToast = document.getElementById('ai-toast');
+                        if (existingToast) existingToast.remove();
 
-                    // Copy to clipboard
-                    try {
-                      await navigator.clipboard.writeText(prompt);
+                        // Create and show toast notification
+                        const toast = document.createElement('div');
+                        toast.id = 'ai-toast';
+                        toast.className = 'fixed top-4 sm:top-20 left-4 right-4 sm:left-auto sm:right-4 bg-green-600 text-white px-4 sm:px-6 py-3 sm:py-4 rounded-lg shadow-lg z-50 max-w-md';
+                        const toastContent = document.createElement('div');
+                        toastContent.className = 'flex items-start space-x-3';
 
-                      // Remove any existing toast to avoid accumulation
-                      const existingToast = document.getElementById('ai-toast');
-                      if (existingToast) existingToast.remove();
+                        const icon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                        icon.setAttribute('class', 'w-5 h-5 flex-shrink-0 mt-0.5');
+                        icon.setAttribute('fill', 'none');
+                        icon.setAttribute('stroke', 'currentColor');
+                        icon.setAttribute('viewBox', '0 0 24 24');
 
-                      // Create and show toast notification
-                      const toast = document.createElement('div');
-                      toast.id = 'ai-toast';
-                      toast.className = 'fixed top-4 sm:top-20 left-4 right-4 sm:left-auto sm:right-4 bg-green-600 text-white px-4 sm:px-6 py-3 sm:py-4 rounded-lg shadow-lg z-50 max-w-md';
-                      const toastContent = document.createElement('div');
-                      toastContent.className = 'flex items-start space-x-3';
+                        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                        path.setAttribute('stroke-linecap', 'round');
+                        path.setAttribute('stroke-linejoin', 'round');
+                        path.setAttribute('stroke-width', '2');
+                        path.setAttribute('d', 'M5 13l4 4L19 7');
+                        icon.appendChild(path);
 
-                      const icon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-                      icon.setAttribute('class', 'w-5 h-5 flex-shrink-0 mt-0.5');
-                      icon.setAttribute('fill', 'none');
-                      icon.setAttribute('stroke', 'currentColor');
-                      icon.setAttribute('viewBox', '0 0 24 24');
+                        const textWrap = document.createElement('div');
+                        const title = document.createElement('p');
+                        title.className = 'font-semibold';
+                        title.textContent = 'Material data copied!';
+                        const subtitle = document.createElement('p');
+                        subtitle.className = 'text-sm text-green-100 mt-1';
+                        subtitle.textContent = 'Paste it in the AI chat (Ctrl+V or Cmd+V)';
+                        textWrap.append(title, subtitle);
 
-                      const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-                      path.setAttribute('stroke-linecap', 'round');
-                      path.setAttribute('stroke-linejoin', 'round');
-                      path.setAttribute('stroke-width', '2');
-                      path.setAttribute('d', 'M5 13l4 4L19 7');
-                      icon.appendChild(path);
+                        toastContent.append(icon, textWrap);
+                        toast.appendChild(toastContent);
+                        document.body.appendChild(toast);
 
-                      const textWrap = document.createElement('div');
-                      const title = document.createElement('p');
-                      title.className = 'font-semibold';
-                      title.textContent = 'Material data copied!';
-                      const subtitle = document.createElement('p');
-                      subtitle.className = 'text-sm text-green-100 mt-1';
-                      subtitle.textContent = 'Paste it in the AI chat (Ctrl+V or Cmd+V)';
-                      textWrap.append(title, subtitle);
+                        // Remove toast after 8 seconds
+                        setTimeout(() => {
+                          const el = document.getElementById('ai-toast');
+                          if (el) el.remove();
+                        }, 8000);
 
-                      toastContent.append(icon, textWrap);
-                      toast.appendChild(toastContent);
-                      document.body.appendChild(toast);
+                        // Open GPT after a short delay, with check for existing window
+                        setTimeout(() => {
+                          const now = Date.now();
+                          const lastOpenTime = window.sustAIdGPTWindowOpenTime || 0;
+                          const timeSinceOpen = now - lastOpenTime;
+                          const thirtySeconds = 30000;
 
-                      // Remove toast after 8 seconds
-                      setTimeout(() => {
-                        const el = document.getElementById('ai-toast');
-                        if (el) el.remove();
-                      }, 8000);
+                          // Check if we have a reference to the GPT window
+                          let windowIsOpen = false;
 
-                      // Open GPT after a short delay, with check for existing window
-                      setTimeout(() => {
-                        const now = Date.now();
-                        const lastOpenTime = window.sustAIdGPTWindowOpenTime || 0;
-                        const timeSinceOpen = now - lastOpenTime;
-                        const thirtySeconds = 30000;
-
-                        // Check if we have a reference to the GPT window
-                        let windowIsOpen = false;
-
-                        // If opened within last 30 seconds, assume it's still open
-                        if (timeSinceOpen < thirtySeconds && lastOpenTime > 0) {
-                          windowIsOpen = true;
-                        } else {
-                          // After 30 seconds, check if it's actually closed
-                          try {
-                            if (window.sustAIdGPTWindow) {
-                              const isClosed = window.sustAIdGPTWindow.closed;
-                              if (isClosed) {
-                                // Window is closed - clear the timestamp
-                                window.sustAIdGPTWindowOpenTime = 0;
-                                windowIsOpen = false;
+                          // If opened within last 30 seconds, assume it's still open
+                          if (timeSinceOpen < thirtySeconds && lastOpenTime > 0) {
+                            windowIsOpen = true;
+                          } else {
+                            // After 30 seconds, check if it's actually closed
+                            try {
+                              if (window.sustAIdGPTWindow) {
+                                const isClosed = window.sustAIdGPTWindow.closed;
+                                if (isClosed) {
+                                  // Window is closed - clear the timestamp
+                                  window.sustAIdGPTWindowOpenTime = 0;
+                                  windowIsOpen = false;
+                                } else {
+                                  // Still open after 30 seconds (rare but possible)
+                                  windowIsOpen = true;
+                                }
                               } else {
-                                // Still open after 30 seconds (rare but possible)
-                                windowIsOpen = true;
+                                // No reference exists
+                                windowIsOpen = false;
                               }
-                            } else {
-                              // No reference exists
+                            } catch (e) {
+                              // Can't check - assume it's closed after 30 seconds
                               windowIsOpen = false;
                             }
-                          } catch (e) {
-                            // Can't check - assume it's closed after 30 seconds
-                            windowIsOpen = false;
                           }
-                        }
 
-                        if (windowIsOpen) {
-                          // Window exists and is open - ask user what to do
-                          if (window.showSustAIdConfirm) {
-                            window.showSustAIdConfirm('The sustAId AI Assistant tab is already open. Would you like to open a new tab or keep using the existing one?').then((openNew) => {
-                              if (openNew) {
-                                // User wants a new tab - use _blank to force new tab
-                                window.sustAIdGPTWindow = window.open(
-                                  'https://chatgpt.com/g/g-68c9d06b6eec81919a2e7d61ed7919c4-sustain',
-                                  '_blank'
-                                );
-                                window.sustAIdGPTWindowOpenTime = Date.now();
-                              } else {
-                                // User wants to keep existing - just try to focus it
-                                try {
-                                  if (window.sustAIdGPTWindow && !window.sustAIdGPTWindow.closed) {
-                                    window.sustAIdGPTWindow.focus();
+                          if (windowIsOpen) {
+                            // Window exists and is open - ask user what to do
+                            if (window.showSustAIdConfirm) {
+                              window.showSustAIdConfirm('The sustAId AI Assistant tab is already open. Would you like to open a new tab or keep using the existing one?').then((openNew) => {
+                                if (openNew) {
+                                  // User wants a new tab - use _blank to force new tab
+                                  window.sustAIdGPTWindow = window.open(
+                                    'https://chatgpt.com/g/g-68c9d06b6eec81919a2e7d61ed7919c4-sustain',
+                                    '_blank'
+                                  );
+                                  window.sustAIdGPTWindowOpenTime = Date.now();
+                                } else {
+                                  // User wants to keep existing - just try to focus it
+                                  try {
+                                    if (window.sustAIdGPTWindow && !window.sustAIdGPTWindow.closed) {
+                                      window.sustAIdGPTWindow.focus();
+                                    }
+                                  } catch (e) {
+                                    // Could not focus - do nothing
                                   }
-                                } catch (e) {
-                                  // Could not focus - do nothing
+                                  // Don't update timestamp - keep the original open time
                                 }
-                                // Don't update timestamp - keep the original open time
-                              }
-                            });
+                              });
+                            }
+                          } else {
+                            // Window doesn't exist or is closed - open it
+                            window.sustAIdGPTWindow = window.open(
+                              'https://chatgpt.com/g/g-68c9d06b6eec81919a2e7d61ed7919c4-sustain',
+                              'sustAId_AI_Assistant'
+                            );
+                            window.sustAIdGPTWindowOpenTime = Date.now();
                           }
-                        } else {
-                          // Window doesn't exist or is closed - open it
-                          window.sustAIdGPTWindow = window.open(
-                            'https://chatgpt.com/g/g-68c9d06b6eec81919a2e7d61ed7919c4-sustain',
-                            'sustAId_AI_Assistant'
-                          );
-                          window.sustAIdGPTWindowOpenTime = Date.now();
-                        }
-                      }, 500);
-                    } catch (err) {
-                      alert('Could not copy to clipboard. Please enable clipboard permissions.');
-                      console.error('Clipboard error:', err);
-                    }
-                  }}
-                  className="w-full flex items-center justify-center space-x-0.5 sm:space-x-1 bg-green-600 text-white py-1.5 sm:py-2 px-1 sm:px-2 rounded-lg hover:bg-green-700 transition-colors text-xs sm:text-sm font-semibold"
-                >
-                  <MessageSquare className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                  <span className="hidden sm:inline">Ask AI</span>
-                  <span className="sm:hidden">AI</span>
-                </button>
+                        }, 500);
+                      } catch (err) {
+                        alert('Could not copy to clipboard. Please enable clipboard permissions.');
+                        console.error('Clipboard error:', err);
+                      }
+                    }}
+                    className="w-full flex items-center justify-center space-x-0.5 sm:space-x-1 bg-green-600 text-white py-1.5 sm:py-2 px-1 sm:px-2 rounded-lg hover:bg-green-700 transition-colors text-xs sm:text-sm font-semibold"
+                  >
+                    <MessageSquare className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                    <span className="hidden sm:inline">Ask AI</span>
+                    <span className="sm:hidden">AI</span>
+                  </button>
                   {/* Tooltip */}
                   <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-50 shadow-lg">
                     Copy material data to clipboard and open AI Assistant
@@ -494,11 +509,10 @@ Can you help me understand this material better and suggest alternatives or best
                         : [...prev, materialName]
                     );
                   }}
-                  className={`flex items-center justify-center space-x-0.5 sm:space-x-1 py-1.5 sm:py-2 px-1 sm:px-2 rounded-lg transition-colors text-xs sm:text-sm font-semibold ${
-                    selectedMaterials.includes(selectedMaterialDetail['Material Name'])
+                  className={`flex items-center justify-center space-x-0.5 sm:space-x-1 py-1.5 sm:py-2 px-1 sm:px-2 rounded-lg transition-colors text-xs sm:text-sm font-semibold ${selectedMaterials.includes(selectedMaterialDetail['Material Name'])
                       ? 'bg-red-600 text-white hover:bg-red-700'
                       : 'bg-yellow-600 text-white hover:bg-yellow-700'
-                  }`}
+                    }`}
                 >
                   <TrendingUp className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                   <span>{selectedMaterials.includes(selectedMaterialDetail['Material Name']) ? 'Remove' : 'Compare'}</span>

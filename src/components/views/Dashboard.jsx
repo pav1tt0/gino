@@ -1,16 +1,38 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Database, Filter, Zap, Leaf } from 'lucide-react';
 
-const Dashboard = ({ totalMaterials, categories, avgSustainability, highSustainability }) => {
+const Dashboard = ({ materials = [] }) => {
+  const stats = useMemo(() => {
+    const totalMaterials = materials.length;
+    const categories = new Set(materials.map(m => m.Category).filter(Boolean)).size;
+
+    const sustainabilityScores = materials
+      .map(m => parseFloat(m['Sustainability Score']))
+      .filter(s => !isNaN(s));
+
+    const avgSustainability = sustainabilityScores.length > 0
+      ? sustainabilityScores.reduce((a, b) => a + b, 0) / sustainabilityScores.length
+      : 0;
+
+    const highSustainability = materials.filter(m => parseFloat(m['Sustainability Score']) === 6).length;
+
+    return {
+      totalMaterials,
+      categories,
+      avgSustainability,
+      highSustainability
+    };
+  }, [materials]);
+
   return (
     <div className="space-y-6">
       {/* Statistics Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-        <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6 border-l-4 border-green-500">
+        <div className="bg-white rounded-xl shadow-sm p-4 sm:p-6 border-l-4 border-slate-500">
           <div className="flex items-center">
-            <Database className="w-6 h-6 sm:w-8 sm:h-8 text-green-600 flex-shrink-0" />
+            <Database className="w-6 h-6 sm:w-8 sm:h-8 text-slate-600 flex-shrink-0" />
             <div className="ml-3 sm:ml-4">
-              <p className="text-xl sm:text-2xl font-bold text-gray-900">{totalMaterials}</p>
+              <p className="text-xl sm:text-2xl font-bold text-gray-900">{stats.totalMaterials}</p>
               <p className="text-sm sm:text-base text-gray-600">Total Materials</p>
             </div>
           </div>
@@ -19,7 +41,7 @@ const Dashboard = ({ totalMaterials, categories, avgSustainability, highSustaina
           <div className="flex items-center">
             <Filter className="w-6 h-6 sm:w-8 sm:h-8 text-blue-600 flex-shrink-0" />
             <div className="ml-3 sm:ml-4">
-              <p className="text-xl sm:text-2xl font-bold text-gray-900">{categories}</p>
+              <p className="text-xl sm:text-2xl font-bold text-gray-900">{stats.categories}</p>
               <p className="text-sm sm:text-base text-gray-600">Categories</p>
             </div>
           </div>
@@ -28,7 +50,7 @@ const Dashboard = ({ totalMaterials, categories, avgSustainability, highSustaina
           <div className="flex items-center">
             <Zap className="w-6 h-6 sm:w-8 sm:h-8 text-yellow-600 flex-shrink-0" />
             <div className="ml-3 sm:ml-4">
-              <p className="text-xl sm:text-2xl font-bold text-gray-900">{avgSustainability.toFixed(1)}</p>
+              <p className="text-xl sm:text-2xl font-bold text-gray-900">{stats.avgSustainability.toFixed(1)}</p>
               <p className="text-sm sm:text-base text-gray-600">Avg. Sustainability</p>
             </div>
           </div>
@@ -37,7 +59,7 @@ const Dashboard = ({ totalMaterials, categories, avgSustainability, highSustaina
           <div className="flex items-center">
             <Leaf className="w-6 h-6 sm:w-8 sm:h-8 text-emerald-600 flex-shrink-0" />
             <div className="ml-3 sm:ml-4">
-              <p className="text-xl sm:text-2xl font-bold text-gray-900">{highSustainability}</p>
+              <p className="text-xl sm:text-2xl font-bold text-gray-900">{stats.highSustainability}</p>
               <p className="text-sm sm:text-base text-gray-600">High Sustainability</p>
             </div>
           </div>

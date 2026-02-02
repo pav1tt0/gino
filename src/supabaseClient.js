@@ -2,10 +2,12 @@ import { createClient } from '@supabase/supabase-js';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const supabaseSchema = import.meta.env.VITE_SUPABASE_SCHEMA || 'public';
+const supabaseTable = import.meta.env.VITE_SUPABASE_TABLE || 'materials';
 
 export const supabaseConfigOk = Boolean(supabaseUrl && supabaseAnonKey);
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+export const supabase = supabaseConfigOk ? createClient(supabaseUrl, supabaseAnonKey) : null;
 
 // Map Supabase column names to App expected format
 const mapSupabaseToAppFormat = (supabaseData) => {
@@ -68,9 +70,13 @@ const mapSupabaseToAppFormat = (supabaseData) => {
 };
 
 // Function to fetch materials from Supabase
-export const fetchMaterialsFromSupabase = async (tableName = 'materials') => {
+export const fetchMaterialsFromSupabase = async (tableName = supabaseTable) => {
+  if (!supabaseConfigOk || !supabase) {
+    throw new Error('Supabase is not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.');
+  }
   try {
     const { data, error } = await supabase
+      .schema(supabaseSchema)
       .from(tableName)
       .select('*');
 
