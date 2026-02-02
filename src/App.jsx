@@ -3,7 +3,8 @@ import { Search, Database, RefreshCw, PieChart, Download, Camera, FileImage, Ale
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ScatterChart, Scatter, RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Legend, PieChart as RechartsPieChart, Pie, Cell, ComposedChart, Line } from 'recharts';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
-import { checkInviteCode, fetchMaterialsFromSupabase, supabase, supabaseConfigOk } from './supabaseClient';
+import { fetchMaterialsFromSupabase, supabaseConfigOk } from './supabaseClient';
+import { useAuth } from './context/AuthContext';
 import toast, { Toaster } from 'react-hot-toast';
 import Papa from 'papaparse';
 import Header from './components/common/Header';
@@ -104,11 +105,10 @@ const ChartExportButtons = ({ chartRef, chartId, filename }) => {
       <button
         onClick={exportPNG}
         disabled={isExporting}
-        className={`flex items-center space-x-1 px-3 py-1 rounded text-xs transition-colors ${
-          isExporting
-            ? 'bg-gray-400 cursor-not-allowed'
-            : 'bg-green-600 hover:bg-green-700'
-        } text-white`}
+        className={`flex items-center space-x-1 px-3 py-1 rounded text-xs transition-colors ${isExporting
+          ? 'bg-gray-400 cursor-not-allowed'
+          : 'bg-green-600 hover:bg-green-700'
+          } text-white`}
         title="Export as PNG"
       >
         <FileImage className="w-3 h-3" />
@@ -117,11 +117,10 @@ const ChartExportButtons = ({ chartRef, chartId, filename }) => {
       <button
         onClick={exportPDF}
         disabled={isExporting}
-        className={`flex items-center space-x-1 px-3 py-1 rounded text-xs transition-colors ${
-          isExporting
-            ? 'bg-gray-400 cursor-not-allowed'
-            : 'bg-red-600 hover:bg-red-700'
-        } text-white`}
+        className={`flex items-center space-x-1 px-3 py-1 rounded text-xs transition-colors ${isExporting
+          ? 'bg-gray-400 cursor-not-allowed'
+          : 'bg-red-600 hover:bg-red-700'
+          } text-white`}
         title="Export as PDF"
       >
         <Camera className="w-3 h-3" />
@@ -176,10 +175,18 @@ const CustomTooltip = ({ active, payload, label, unit }) => {
 };
 
 const SustainableMaterialsApp = () => {
-  const [session, setSession] = useState(null);
-  const [authLoading, setAuthLoading] = useState(true);
-  const [authBusy, setAuthBusy] = useState(false);
-  const [authError, setAuthError] = useState('');
+  const {
+    session,
+    loading: authLoading,
+    error: authError,
+    busy: authBusy,
+    signIn,
+    signUp,
+    signOut,
+    setError: setAuthError
+  } = useAuth();
+
+  // Local state for app data (kept separate from auth)
   const [materials, setMaterials] = useState([]);
   const [filteredMaterials, setFilteredMaterials] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -217,38 +224,7 @@ const SustainableMaterialsApp = () => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  useEffect(() => {
-    let isMounted = true;
-
-    const initAuth = async () => {
-      try {
-        const { data, error } = await supabase.auth.getSession();
-        if (error) {
-          console.error('Auth session error:', error);
-        }
-        if (isMounted) {
-          setSession(data?.session || null);
-        }
-      } finally {
-        if (isMounted) {
-          setAuthLoading(false);
-        }
-      }
-    };
-
-    initAuth();
-
-    const { data: authListener } = supabase.auth.onAuthStateChange((_event, nextSession) => {
-      if (isMounted) {
-        setSession(nextSession);
-      }
-    });
-
-    return () => {
-      isMounted = false;
-      authListener?.subscription?.unsubscribe();
-    };
-  }, []);
+  // Auth initialization is now handled by AuthContext
 
   // Load materials from Supabase when authenticated
   useEffect(() => {
@@ -294,80 +270,19 @@ const SustainableMaterialsApp = () => {
     return '#ef4444'; // Red for low sustainability (1-2)
   };
 
-  const handleSignIn = async ({ email, password }) => {
-    setAuthError('');
-    if (!supabaseConfigOk) {
-      setAuthError('Supabase is not configured. Please set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.');
-      return;
-    }
-
-    setAuthBusy(true);
-    try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email: String(email || '').trim(),
-        password: String(password || '')
-      });
-
-      if (error) {
-        setAuthError(error.message);
-      }
-    } catch (error) {
-      setAuthError('Login failed. Please try again.');
-      console.error('Sign in error:', error);
-    } finally {
-      setAuthBusy(false);
-    }
+  const handleSignIn = async (credentials) => {
+    await signIn(credentials);
   };
 
-  const handleSignUp = async ({ email, password, inviteCode }) => {
-    setAuthError('');
-    if (!supabaseConfigOk) {
-      setAuthError('Supabase is not configured. Please set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.');
-      return;
-    }
-
-    setAuthBusy(true);
-    try {
-      const inviteOk = await checkInviteCode(inviteCode);
-      if (!inviteOk) {
-        setAuthError('Invalid invite code.');
-        return;
-      }
-
-      const { error } = await supabase.auth.signUp({
-        email: String(email || '').trim(),
-        password: String(password || '')
-      });
-
-      if (error) {
-        setAuthError(error.message);
-        return;
-      }
-
-      toast.success('Account created. You are now signed in.');
-    } catch (error) {
-      setAuthError('Sign up failed. Please try again.');
-      console.error('Sign up error:', error);
-    } finally {
-      setAuthBusy(false);
-    }
+  const handleSignUp = async (credentials) => {
+    await signUp(credentials);
   };
 
   const handleLogout = async () => {
-    setAuthError('');
-    setAuthBusy(true);
-    try {
-      const { error } = await supabase.auth.signOut({ scope: 'local' });
-      if (error) {
-        console.error('Sign out error:', error);
-      }
-    } finally {
-      setSession(null);
-      setMaterials([]);
-      setFilteredMaterials([]);
-      setSupabaseMaterials([]);
-      setAuthBusy(false);
-    }
+    await signOut();
+    setMaterials([]);
+    setFilteredMaterials([]);
+    setSupabaseMaterials([]);
   };
 
 
@@ -936,11 +851,11 @@ const SustainableMaterialsApp = () => {
   // Filter and search materials
   useEffect(() => {
     let filtered = [...materials]; // Create a copy to avoid mutations
-    
+
     if (filterCategory !== 'all') {
       filtered = filtered.filter(m => m.Category === filterCategory);
     }
-    
+
     if (searchQuery) {
       filtered = filtered.filter(m =>
         (m['Material Name'] || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -948,7 +863,7 @@ const SustainableMaterialsApp = () => {
         (m['Primary Applications'] || '').toLowerCase().includes(searchQuery.toLowerCase())
       );
     }
-    
+
     // Sort materials
     filtered.sort((a, b) => {
       if (sortBy === 'name') {
@@ -962,7 +877,7 @@ const SustainableMaterialsApp = () => {
       }
       return 0;
     });
-    
+
     setFilteredMaterials(filtered);
   }, [materials, searchQuery, filterCategory, sortBy]);
 
@@ -971,8 +886,8 @@ const SustainableMaterialsApp = () => {
   // Dashboard metrics
   const totalMaterials = materials.length;
   const categories = new Set(materials.map(m => m.Category)).size;
-  const avgSustainability = materials.length > 0 
-    ? materials.reduce((sum, m) => sum + (parseFloat(m['Sustainability Score']) || 0), 0) / materials.length 
+  const avgSustainability = materials.length > 0
+    ? materials.reduce((sum, m) => sum + (parseFloat(m['Sustainability Score']) || 0), 0) / materials.length
     : 0;
   const highSustainability = materials.filter(m => parseFloat(m['Sustainability Score']) === 6).length;
 
@@ -1119,204 +1034,204 @@ const SustainableMaterialsApp = () => {
       {/* Main Content */}
       <main className="flex-1 overflow-auto">
         <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-        {materials.length === 0 && (
-          <div className="bg-gradient-to-r from-blue-50 to-green-50 border border-blue-200 rounded-xl p-4 sm:p-8 mb-6">
-            <div className="text-center">
-              <Database className="w-12 h-12 sm:w-16 sm:h-16 mx-auto text-blue-600 mb-4" />
-              <h3 className="text-lg sm:text-2xl font-semibold text-gray-800 mb-2">Upload Your Materials Database</h3>
-              <p className="text-sm sm:text-base text-gray-600">Click "Upload Data" above to load your sustainable materials data.</p>
-            </div>
-          </div>
-        )}
-
-        {activeTab === 'dashboard' && (
-          <Dashboard
-            totalMaterials={totalMaterials}
-            categories={categories}
-            avgSustainability={avgSustainability}
-            highSustainability={highSustainability}
-          />
-        )}
-
-        {activeTab === 'database' && materials.length > 0 && (
-          <MaterialsDatabase
-            materials={materials}
-            searchQuery={searchQuery}
-            setSearchQuery={setSearchQuery}
-            filterCategory={filterCategory}
-            setFilterCategory={setFilterCategory}
-            sortBy={sortBy}
-            setSortBy={setSortBy}
-            filteredMaterials={filteredMaterials}
-            exportToCSV={exportToCSV}
-            exportToJSON={exportToJSON}
-            getSustainabilityColor={getSustainabilityColor}
-            setSelectedMaterialDetail={setSelectedMaterialDetail}
-            selectedMaterialDetail={selectedMaterialDetail}
-            selectedMaterials={selectedMaterials}
-            setSelectedMaterials={setSelectedMaterials}
-          />
-        )}
-
-        {activeTab === 'methodology' && (
-          <div className="w-full">
-            <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6">
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 mb-4 sm:mb-6">
-                <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Methodology</h2>
-                <a
-                  href="/Methodology.pdf"
-                  download
-                  className="flex items-center space-x-1.5 px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
-                >
-                  <Download className="w-3.5 h-3.5" />
-                  <span>Download PDF</span>
-                </a>
-              </div>
-
-              {/* PDF Controls */}
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 sm:gap-3 mb-4 bg-gray-50 p-2 sm:p-3 rounded-lg sticky top-0 z-10 shadow-md">
-                {/* Navigation Controls */}
-                <div className="flex items-center justify-center gap-2">
-                  <button
-                    onClick={() => goToPage(Math.max(pageNumber - 1, 1))}
-                    disabled={pageNumber <= 1}
-                    className="flex items-center justify-center w-7 h-7 bg-green-600 text-white rounded hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
-                    title="Previous page"
-                  >
-                    <ChevronLeft className="w-3.5 h-3.5" />
-                  </button>
-                  <span className="text-xs sm:text-sm text-gray-700 min-w-[80px] sm:min-w-[100px] text-center">
-                    Page {pageNumber} of {numPages || '...'}
-                  </span>
-                  <button
-                    onClick={() => goToPage(Math.min(pageNumber + 1, numPages || pageNumber))}
-                    disabled={pageNumber >= numPages}
-                    className="flex items-center justify-center w-7 h-7 bg-green-600 text-white rounded hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
-                    title="Next page"
-                  >
-                    <ChevronRight className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-
-                {/* Zoom Controls */}
-                <div className="flex items-center justify-center gap-2">
-                  <button
-                    onClick={() => setScale(prev => Math.max(prev - 0.2, 0.5))}
-                    disabled={scale <= 0.5}
-                    className="flex items-center justify-center w-7 h-7 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
-                    title="Zoom out"
-                  >
-                    <ZoomOut className="w-3.5 h-3.5" />
-                  </button>
-                  <span className="text-xs sm:text-sm text-gray-700 min-w-[50px] sm:min-w-[60px] text-center">
-                    {Math.round(scale * 100)}%
-                  </span>
-                  <button
-                    onClick={() => setScale(prev => Math.min(prev + 0.2, 2.0))}
-                    disabled={scale >= 2.0}
-                    className="flex items-center justify-center w-7 h-7 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
-                    title="Zoom in"
-                  >
-                    <ZoomIn className="w-3.5 h-3.5" />
-                  </button>
-                  <button
-                    onClick={() => setScale(1.0)}
-                    className="text-[10px] sm:text-xs px-1.5 sm:px-2 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition-colors"
-                    title="Reset zoom"
-                  >
-                    Reset
-                  </button>
-                  <button
-                    onClick={() => goToPage(1)}
-                    className="text-[10px] sm:text-xs px-1.5 sm:px-2 py-1 bg-green-600 text-white rounded hover:bg-green-700 transition-colors ml-1 sm:ml-2"
-                    title="Torna all'inizio"
-                  >
-                    ⬆ Top
-                  </button>
-                </div>
-              </div>
-
-              <div className="flex flex-col items-center space-y-4 w-full">
-                <Document
-                  file="/Methodology.pdf"
-                  onLoadSuccess={({ numPages }) => setNumPages(numPages)}
-                  loading={
-                    <div className="flex items-center justify-center py-8">
-                      <RefreshCw className="w-8 h-8 text-green-600 animate-spin" />
-                      <span className="ml-2 text-gray-600">Loading PDF...</span>
-                    </div>
-                  }
-                  error={
-                    <div className="flex items-center justify-center py-8 text-red-600">
-                      <AlertCircle className="w-8 h-8 mr-2" />
-                      <span>Failed to load PDF</span>
-                    </div>
-                  }
-                  className="w-full"
-                >
-                  <div className="border border-gray-200 rounded-lg overflow-auto shadow-sm w-full max-h-[85vh] sm:max-h-[70vh]">
-                    <div className="flex flex-col items-center space-y-4 p-4">
-                      {Array.from(new Array(numPages), (el, index) => (
-                        <div
-                          key={`page_${index + 1}`}
-                          ref={el => pageRefs.current[index] = el}
-                          className="shadow-lg"
-                        >
-                          <Page
-                            pageNumber={index + 1}
-                            renderTextLayer={true}
-                            renderAnnotationLayer={true}
-                            className="max-w-full"
-                            width={(isSmallScreen ? Math.max(viewportWidth - 40, 280) : Math.min(viewportWidth - 200, 1400)) * scale}
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </Document>
+          {materials.length === 0 && (
+            <div className="bg-gradient-to-r from-blue-50 to-green-50 border border-blue-200 rounded-xl p-4 sm:p-8 mb-6">
+              <div className="text-center">
+                <Database className="w-12 h-12 sm:w-16 sm:h-16 mx-auto text-blue-600 mb-4" />
+                <h3 className="text-lg sm:text-2xl font-semibold text-gray-800 mb-2">Upload Your Materials Database</h3>
+                <p className="text-sm sm:text-base text-gray-600">Click "Upload Data" above to load your sustainable materials data.</p>
               </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {activeTab === 'download' && <DownloadApp />}
+          {activeTab === 'dashboard' && (
+            <Dashboard
+              totalMaterials={totalMaterials}
+              categories={categories}
+              avgSustainability={avgSustainability}
+              highSustainability={highSustainability}
+            />
+          )}
 
-        {activeTab === 'analytics' && (
-          <div className="space-y-6">
-            {materials.length === 0 ? (
-              <div className="text-center py-8">
-                <PieChart className="w-16 h-16 mx-auto text-gray-300 mb-4" />
-                <p className="text-gray-500">Upload your materials database to view LCA analytics.</p>
-              </div>
-            ) : (
-              <>
-                {/* Material Selection for Analytics */}
-                <div className="bg-white rounded-xl shadow-lg p-6">
-                  <h2 className="text-xl font-bold text-gray-900 mb-4">Select Materials to Analyze</h2>
+          {activeTab === 'database' && materials.length > 0 && (
+            <MaterialsDatabase
+              materials={materials}
+              searchQuery={searchQuery}
+              setSearchQuery={setSearchQuery}
+              filterCategory={filterCategory}
+              setFilterCategory={setFilterCategory}
+              sortBy={sortBy}
+              setSortBy={setSortBy}
+              filteredMaterials={filteredMaterials}
+              exportToCSV={exportToCSV}
+              exportToJSON={exportToJSON}
+              getSustainabilityColor={getSustainabilityColor}
+              setSelectedMaterialDetail={setSelectedMaterialDetail}
+              selectedMaterialDetail={selectedMaterialDetail}
+              selectedMaterials={selectedMaterials}
+              setSelectedMaterials={setSelectedMaterials}
+            />
+          )}
 
-                  {/* Search Bar */}
-                  <div className="mb-4">
-                    <div className="relative">
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                      <input
-                        type="text"
-                        placeholder="Search materials..."
-                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                        value={analyticsSearchQuery}
-                        onChange={(e) => setAnalyticsSearchQuery(e.target.value)}
-                      />
-                    </div>
+          {activeTab === 'methodology' && (
+            <div className="w-full">
+              <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 mb-4 sm:mb-6">
+                  <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Methodology</h2>
+                  <a
+                    href="/Methodology.pdf"
+                    download
+                    className="flex items-center space-x-1.5 px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    <span>Download PDF</span>
+                  </a>
+                </div>
+
+                {/* PDF Controls */}
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 sm:gap-3 mb-4 bg-gray-50 p-2 sm:p-3 rounded-lg sticky top-0 z-10 shadow-md">
+                  {/* Navigation Controls */}
+                  <div className="flex items-center justify-center gap-2">
+                    <button
+                      onClick={() => goToPage(Math.max(pageNumber - 1, 1))}
+                      disabled={pageNumber <= 1}
+                      className="flex items-center justify-center w-7 h-7 bg-green-600 text-white rounded hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+                      title="Previous page"
+                    >
+                      <ChevronLeft className="w-3.5 h-3.5" />
+                    </button>
+                    <span className="text-xs sm:text-sm text-gray-700 min-w-[80px] sm:min-w-[100px] text-center">
+                      Page {pageNumber} of {numPages || '...'}
+                    </span>
+                    <button
+                      onClick={() => goToPage(Math.min(pageNumber + 1, numPages || pageNumber))}
+                      disabled={pageNumber >= numPages}
+                      className="flex items-center justify-center w-7 h-7 bg-green-600 text-white rounded hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+                      title="Next page"
+                    >
+                      <ChevronRight className="w-3.5 h-3.5" />
+                    </button>
                   </div>
 
-                  {/* Materials Grid with Enhanced Scrollbar */}
-                  <div
-                    className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 max-h-60 overflow-y-auto pr-2"
-                    style={{
-                      scrollbarWidth: 'thin',
-                      scrollbarColor: '#10b981 #e5e7eb'
-                    }}
+                  {/* Zoom Controls */}
+                  <div className="flex items-center justify-center gap-2">
+                    <button
+                      onClick={() => setScale(prev => Math.max(prev - 0.2, 0.5))}
+                      disabled={scale <= 0.5}
+                      className="flex items-center justify-center w-7 h-7 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+                      title="Zoom out"
+                    >
+                      <ZoomOut className="w-3.5 h-3.5" />
+                    </button>
+                    <span className="text-xs sm:text-sm text-gray-700 min-w-[50px] sm:min-w-[60px] text-center">
+                      {Math.round(scale * 100)}%
+                    </span>
+                    <button
+                      onClick={() => setScale(prev => Math.min(prev + 0.2, 2.0))}
+                      disabled={scale >= 2.0}
+                      className="flex items-center justify-center w-7 h-7 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+                      title="Zoom in"
+                    >
+                      <ZoomIn className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      onClick={() => setScale(1.0)}
+                      className="text-[10px] sm:text-xs px-1.5 sm:px-2 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition-colors"
+                      title="Reset zoom"
+                    >
+                      Reset
+                    </button>
+                    <button
+                      onClick={() => goToPage(1)}
+                      className="text-[10px] sm:text-xs px-1.5 sm:px-2 py-1 bg-green-600 text-white rounded hover:bg-green-700 transition-colors ml-1 sm:ml-2"
+                      title="Torna all'inizio"
+                    >
+                      ⬆ Top
+                    </button>
+                  </div>
+                </div>
+
+                <div className="flex flex-col items-center space-y-4 w-full">
+                  <Document
+                    file="/Methodology.pdf"
+                    onLoadSuccess={({ numPages }) => setNumPages(numPages)}
+                    loading={
+                      <div className="flex items-center justify-center py-8">
+                        <RefreshCw className="w-8 h-8 text-green-600 animate-spin" />
+                        <span className="ml-2 text-gray-600">Loading PDF...</span>
+                      </div>
+                    }
+                    error={
+                      <div className="flex items-center justify-center py-8 text-red-600">
+                        <AlertCircle className="w-8 h-8 mr-2" />
+                        <span>Failed to load PDF</span>
+                      </div>
+                    }
+                    className="w-full"
                   >
-                    <style jsx>{`
+                    <div className="border border-gray-200 rounded-lg overflow-auto shadow-sm w-full max-h-[85vh] sm:max-h-[70vh]">
+                      <div className="flex flex-col items-center space-y-4 p-4">
+                        {Array.from(new Array(numPages), (el, index) => (
+                          <div
+                            key={`page_${index + 1}`}
+                            ref={el => pageRefs.current[index] = el}
+                            className="shadow-lg"
+                          >
+                            <Page
+                              pageNumber={index + 1}
+                              renderTextLayer={true}
+                              renderAnnotationLayer={true}
+                              className="max-w-full"
+                              width={(isSmallScreen ? Math.max(viewportWidth - 40, 280) : Math.min(viewportWidth - 200, 1400)) * scale}
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </Document>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'download' && <DownloadApp />}
+
+          {activeTab === 'analytics' && (
+            <div className="space-y-6">
+              {materials.length === 0 ? (
+                <div className="text-center py-8">
+                  <PieChart className="w-16 h-16 mx-auto text-gray-300 mb-4" />
+                  <p className="text-gray-500">Upload your materials database to view LCA analytics.</p>
+                </div>
+              ) : (
+                <>
+                  {/* Material Selection for Analytics */}
+                  <div className="bg-white rounded-xl shadow-lg p-6">
+                    <h2 className="text-xl font-bold text-gray-900 mb-4">Select Materials to Analyze</h2>
+
+                    {/* Search Bar */}
+                    <div className="mb-4">
+                      <div className="relative">
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                        <input
+                          type="text"
+                          placeholder="Search materials..."
+                          className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                          value={analyticsSearchQuery}
+                          onChange={(e) => setAnalyticsSearchQuery(e.target.value)}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Materials Grid with Enhanced Scrollbar */}
+                    <div
+                      className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 max-h-60 overflow-y-auto pr-2"
+                      style={{
+                        scrollbarWidth: 'thin',
+                        scrollbarColor: '#10b981 #e5e7eb'
+                      }}
+                    >
+                      <style jsx>{`
                       div::-webkit-scrollbar {
                         width: 12px;
                       }
@@ -1332,719 +1247,859 @@ const SustainableMaterialsApp = () => {
                         background: #059669;
                       }
                     `}</style>
-                    {materials
-                      .filter(material =>
-                        !analyticsSearchQuery ||
-                        (material['Material Name'] || '').toLowerCase().includes(analyticsSearchQuery.toLowerCase()) ||
-                        (material.Category || '').toLowerCase().includes(analyticsSearchQuery.toLowerCase())
-                      )
-                      .sort((a, b) => {
-                        const nameA = (a['Material Name'] || '').toLowerCase();
-                        const nameB = (b['Material Name'] || '').toLowerCase();
-                        return nameA.localeCompare(nameB);
-                      })
-                      .map((material, index) => (
-                        <label key={index} className="flex items-center space-x-2 p-2 bg-gray-50 rounded cursor-pointer hover:bg-gray-100 transition-colors">
-                          <input
-                            type="checkbox"
-                            checked={selectedAnalyticsMaterials.includes(material['Material Name'])}
-                            onChange={(e) => {
-                              const materialName = material['Material Name'];
-                              if (e.target.checked) {
-                                setSelectedAnalyticsMaterials(prev => [...prev, materialName]);
-                              } else {
-                                setSelectedAnalyticsMaterials(prev => prev.filter(name => name !== materialName));
-                              }
-                            }}
-                            className="text-green-600 w-4 h-4"
-                          />
-                          <span className="text-xs text-gray-700 flex-1">{material['Material Name']}</span>
-                        </label>
-                      ))}
-                  </div>
+                      {materials
+                        .filter(material =>
+                          !analyticsSearchQuery ||
+                          (material['Material Name'] || '').toLowerCase().includes(analyticsSearchQuery.toLowerCase()) ||
+                          (material.Category || '').toLowerCase().includes(analyticsSearchQuery.toLowerCase())
+                        )
+                        .sort((a, b) => {
+                          const nameA = (a['Material Name'] || '').toLowerCase();
+                          const nameB = (b['Material Name'] || '').toLowerCase();
+                          return nameA.localeCompare(nameB);
+                        })
+                        .map((material, index) => (
+                          <label key={index} className="flex items-center space-x-2 p-2 bg-gray-50 rounded cursor-pointer hover:bg-gray-100 transition-colors">
+                            <input
+                              type="checkbox"
+                              checked={selectedAnalyticsMaterials.includes(material['Material Name'])}
+                              onChange={(e) => {
+                                const materialName = material['Material Name'];
+                                if (e.target.checked) {
+                                  setSelectedAnalyticsMaterials(prev => [...prev, materialName]);
+                                } else {
+                                  setSelectedAnalyticsMaterials(prev => prev.filter(name => name !== materialName));
+                                }
+                              }}
+                              className="text-green-600 w-4 h-4"
+                            />
+                            <span className="text-xs text-gray-700 flex-1">{material['Material Name']}</span>
+                          </label>
+                        ))}
+                    </div>
 
-                  {/* Footer with counters and buttons */}
-                  <div className="mt-4 flex justify-between items-center">
-                    <p className="text-sm text-gray-600">
-                      {selectedAnalyticsMaterials.length} materials selected
-                      {analyticsSearchQuery && (
-                        <span className="ml-2 text-green-600">
-                          ({materials.filter(m =>
-                            (m['Material Name'] || '').toLowerCase().includes(analyticsSearchQuery.toLowerCase()) ||
-                            (m.Category || '').toLowerCase().includes(analyticsSearchQuery.toLowerCase())
-                          ).length} found)
-                        </span>
-                      )}
-                    </p>
-                    <div className="space-x-2">
-                      <button
-                        onClick={() => setSelectedAnalyticsMaterials(selectedMaterials)}
-                        disabled={selectedMaterials.length === 0}
-                        className={`px-3 py-1 rounded text-xs transition-colors ${
-                          selectedMaterials.length === 0
+                    {/* Footer with counters and buttons */}
+                    <div className="mt-4 flex justify-between items-center">
+                      <p className="text-sm text-gray-600">
+                        {selectedAnalyticsMaterials.length} materials selected
+                        {analyticsSearchQuery && (
+                          <span className="ml-2 text-green-600">
+                            ({materials.filter(m =>
+                              (m['Material Name'] || '').toLowerCase().includes(analyticsSearchQuery.toLowerCase()) ||
+                              (m.Category || '').toLowerCase().includes(analyticsSearchQuery.toLowerCase())
+                            ).length} found)
+                          </span>
+                        )}
+                      </p>
+                      <div className="space-x-2">
+                        <button
+                          onClick={() => setSelectedAnalyticsMaterials(selectedMaterials)}
+                          disabled={selectedMaterials.length === 0}
+                          className={`px-3 py-1 rounded text-xs transition-colors ${selectedMaterials.length === 0
                             ? 'bg-blue-300 text-white cursor-not-allowed'
                             : 'bg-blue-600 text-white hover:bg-blue-700'
-                        }`}
-                      >
-                        Load Compare ({selectedMaterials.length})
-                      </button>
-                      <button
-                        onClick={() => setSelectedAnalyticsMaterials(materials.map(m => m['Material Name']))}
-                        className="px-3 py-1 bg-green-600 text-white rounded text-xs hover:bg-green-700 transition-colors"
-                      >
-                        Select All
-                      </button>
-                      <button
-                        onClick={() => {
-                          setSelectedAnalyticsMaterials([]);
-                          setAnalyticsSearchQuery('');
-                        }}
-                        className="px-3 py-1 bg-gray-500 text-white rounded text-xs hover:bg-gray-600 transition-colors"
-                      >
-                        Clear All
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                {selectedAnalyticsMaterials.length === 0 ? (
-                  <div className="text-center py-8">
-                    <PieChart className="w-16 h-16 mx-auto text-gray-300 mb-4" />
-                    <p className="text-gray-500">Select materials above to view comparative analytics.</p>
-                  </div>
-                ) : (
-                  <>
-                    {/* Category Distribution Pie Chart */}
-                    <div className="bg-white rounded-xl shadow-lg p-6" id="category-distribution-chart">
-                      <div className="flex justify-between items-start mb-4">
-                        <h2 className="text-xl font-bold text-gray-900">
-                          Materials Distribution by Category
-                        </h2>
-                        <ChartExportButtons
-                          chartId="category-distribution-chart"
-                          filename="category_distribution"
-                        />
+                            }`}
+                        >
+                          Load Compare ({selectedMaterials.length})
+                        </button>
+                        <button
+                          onClick={() => setSelectedAnalyticsMaterials(materials.map(m => m['Material Name']))}
+                          className="px-3 py-1 bg-green-600 text-white rounded text-xs hover:bg-green-700 transition-colors"
+                        >
+                          Select All
+                        </button>
+                        <button
+                          onClick={() => {
+                            setSelectedAnalyticsMaterials([]);
+                            setAnalyticsSearchQuery('');
+                          }}
+                          className="px-3 py-1 bg-gray-500 text-white rounded text-xs hover:bg-gray-600 transition-colors"
+                        >
+                          Clear All
+                        </button>
                       </div>
-                      <ResponsiveContainer width="100%" height={400}>
-                        <RechartsPieChart>
-                          <Pie
-                            data={(() => {
-                              const categoryCount = {};
-                              materials
-                                .filter(material => selectedAnalyticsMaterials.includes(material['Material Name']))
-                                .forEach(material => {
-                                  const category = material.Category || 'Unknown';
-                                  categoryCount[category] = (categoryCount[category] || 0) + 1;
-                                });
-
-                              const colors = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16'];
-
-                              return Object.entries(categoryCount).map(([category, count], index) => ({
-                                name: category,
-                                value: count,
-                                fill: colors[index % colors.length]
-                              }));
-                            })()}
-                            cx="50%"
-                            cy="50%"
-                            labelLine={true}
-                            label={({ name, value, percent }) => `${name}: ${value} (${(percent * 100).toFixed(0)}%)`}
-                            outerRadius={120}
-                            dataKey="value"
-                          >
-                          </Pie>
-                          <Tooltip />
-                          <Legend />
-                        </RechartsPieChart>
-                      </ResponsiveContainer>
                     </div>
+                  </div>
 
-                    {/* Environmental Impact Comparison */}
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                      {/* GHG Emissions */}
-                      <div className="bg-white rounded-xl shadow-lg p-6" id="ghg-emissions-chart">
+                  {selectedAnalyticsMaterials.length === 0 ? (
+                    <div className="text-center py-8">
+                      <PieChart className="w-16 h-16 mx-auto text-gray-300 mb-4" />
+                      <p className="text-gray-500">Select materials above to view comparative analytics.</p>
+                    </div>
+                  ) : (
+                    <>
+                      {/* Category Distribution Pie Chart */}
+                      <div className="bg-white rounded-xl shadow-lg p-6" id="category-distribution-chart">
                         <div className="flex justify-between items-start mb-4">
-                          <h2 className="text-xl font-bold text-gray-900">GHG Emissions Comparison</h2>
+                          <h2 className="text-xl font-bold text-gray-900">
+                            Materials Distribution by Category
+                          </h2>
                           <ChartExportButtons
-                            chartId="ghg-emissions-chart"
-                            filename="ghg_emissions_comparison"
+                            chartId="category-distribution-chart"
+                            filename="category_distribution"
                           />
                         </div>
-                        <MissingDataWarning
-                          excludedMaterials={materials
-                            .filter(material => selectedAnalyticsMaterials.includes(material['Material Name']))
-                            .filter(material => {
-                              const ghgStr = String(material['GHG Emissions (kg CO2e/kg)'] || '').toUpperCase();
-                              // 0 is a valid value (zero emissions), only N/A or missing data is invalid
-                              return ghgStr.includes('N/A') || !ghgStr.match(/[\d.]+/);
-                            })
-                            .map(material => ({ name: material['Material Name'], reason: 'no GHG data' }))}
-                        />
-                        <ResponsiveContainer width="100%" height={250}>
-                          <BarChart data={materials
-                            .filter(material => selectedAnalyticsMaterials.includes(material['Material Name']))
-                            .map(material => ({
-                              name: (material['Material Name'] || '').length > 8 ?
-                                     (material['Material Name'] || '').substring(0, 8) + '...' :
-                                     (material['Material Name'] || ''),
-                              fullName: material['Material Name'] || '',
-                              ghg: (() => {
+                        <ResponsiveContainer width="100%" height={400}>
+                          <RechartsPieChart>
+                            <Pie
+                              data={(() => {
+                                const categoryCount = {};
+                                materials
+                                  .filter(material => selectedAnalyticsMaterials.includes(material['Material Name']))
+                                  .forEach(material => {
+                                    const category = material.Category || 'Unknown';
+                                    categoryCount[category] = (categoryCount[category] || 0) + 1;
+                                  });
+
+                                const colors = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16'];
+
+                                return Object.entries(categoryCount).map(([category, count], index) => ({
+                                  name: category,
+                                  value: count,
+                                  fill: colors[index % colors.length]
+                                }));
+                              })()}
+                              cx="50%"
+                              cy="50%"
+                              labelLine={true}
+                              label={({ name, value, percent }) => `${name}: ${value} (${(percent * 100).toFixed(0)}%)`}
+                              outerRadius={120}
+                              dataKey="value"
+                            >
+                            </Pie>
+                            <Tooltip />
+                            <Legend />
+                          </RechartsPieChart>
+                        </ResponsiveContainer>
+                      </div>
+
+                      {/* Environmental Impact Comparison */}
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        {/* GHG Emissions */}
+                        <div className="bg-white rounded-xl shadow-lg p-6" id="ghg-emissions-chart">
+                          <div className="flex justify-between items-start mb-4">
+                            <h2 className="text-xl font-bold text-gray-900">GHG Emissions Comparison</h2>
+                            <ChartExportButtons
+                              chartId="ghg-emissions-chart"
+                              filename="ghg_emissions_comparison"
+                            />
+                          </div>
+                          <MissingDataWarning
+                            excludedMaterials={materials
+                              .filter(material => selectedAnalyticsMaterials.includes(material['Material Name']))
+                              .filter(material => {
                                 const ghgStr = String(material['GHG Emissions (kg CO2e/kg)'] || '').toUpperCase();
-                                // Check for N/A - return null to exclude from chart
-                                if (ghgStr.includes('N/A') || !ghgStr.match(/[\d.]+/)) return null;
-                                const match = ghgStr.match(/[\d.]+/);
-                                return match ? parseFloat(match[0]) : null;
-                              })()
-                            }))
-                            .filter(item => item.ghg !== null) // Include 0, exclude only null (N/A)
-                            .sort((a, b) => a.ghg - b.ghg)}>
-                            <CartesianGrid strokeDasharray="3 3" />
-                            <XAxis dataKey="name" angle={-45} textAnchor="end" height={60} fontSize={10} />
-                            <YAxis />
-                            <Tooltip content={<CustomTooltip unit="kg CO2e/kg" />} />
-                            <Bar dataKey="ghg" fill="#ef4444" />
-                          </BarChart>
-                        </ResponsiveContainer>
-                      </div>
-
-                      {/* Water Consumption */}
-                      <div className="bg-white rounded-xl shadow-lg p-6" id="water-consumption-chart">
-                        <div className="flex justify-between items-start mb-4">
-                          <h2 className="text-xl font-bold text-gray-900">Water Consumption Comparison</h2>
-                          <ChartExportButtons
-                            chartId="water-consumption-chart"
-                            filename="water_consumption_comparison"
+                                // 0 is a valid value (zero emissions), only N/A or missing data is invalid
+                                return ghgStr.includes('N/A') || !ghgStr.match(/[\d.]+/);
+                              })
+                              .map(material => ({ name: material['Material Name'], reason: 'no GHG data' }))}
                           />
+                          <ResponsiveContainer width="100%" height={250}>
+                            <BarChart data={materials
+                              .filter(material => selectedAnalyticsMaterials.includes(material['Material Name']))
+                              .map(material => ({
+                                name: (material['Material Name'] || '').length > 8 ?
+                                  (material['Material Name'] || '').substring(0, 8) + '...' :
+                                  (material['Material Name'] || ''),
+                                fullName: material['Material Name'] || '',
+                                ghg: (() => {
+                                  const ghgStr = String(material['GHG Emissions (kg CO2e/kg)'] || '').toUpperCase();
+                                  // Check for N/A - return null to exclude from chart
+                                  if (ghgStr.includes('N/A') || !ghgStr.match(/[\d.]+/)) return null;
+                                  const match = ghgStr.match(/[\d.]+/);
+                                  return match ? parseFloat(match[0]) : null;
+                                })()
+                              }))
+                              .filter(item => item.ghg !== null) // Include 0, exclude only null (N/A)
+                              .sort((a, b) => a.ghg - b.ghg)}>
+                              <CartesianGrid strokeDasharray="3 3" />
+                              <XAxis dataKey="name" angle={-45} textAnchor="end" height={60} fontSize={10} />
+                              <YAxis />
+                              <Tooltip content={<CustomTooltip unit="kg CO2e/kg" />} />
+                              <Bar dataKey="ghg" fill="#ef4444" />
+                            </BarChart>
+                          </ResponsiveContainer>
                         </div>
-                        <MissingDataWarning
-                          excludedMaterials={materials
-                            .filter(material => selectedAnalyticsMaterials.includes(material['Material Name']))
-                            .filter(material => {
-                              const waterStr = String(material['Water Consumption (L/kg)'] || '').toUpperCase();
-                              // 0 is a valid value (zero water consumption), only N/A or missing data is invalid
-                              return waterStr.includes('N/A') || !waterStr.match(/[\d.]+/);
-                            })
-                            .map(material => ({ name: material['Material Name'], reason: 'no water data' }))}
-                        />
-                        <ResponsiveContainer width="100%" height={250}>
-                          <BarChart data={materials
-                            .filter(material => selectedAnalyticsMaterials.includes(material['Material Name']))
-                            .map(material => ({
-                              name: (material['Material Name'] || '').length > 8 ?
-                                     (material['Material Name'] || '').substring(0, 8) + '...' :
-                                     (material['Material Name'] || ''),
-                              fullName: material['Material Name'] || '',
-                              water: (() => {
+
+                        {/* Water Consumption */}
+                        <div className="bg-white rounded-xl shadow-lg p-6" id="water-consumption-chart">
+                          <div className="flex justify-between items-start mb-4">
+                            <h2 className="text-xl font-bold text-gray-900">Water Consumption Comparison</h2>
+                            <ChartExportButtons
+                              chartId="water-consumption-chart"
+                              filename="water_consumption_comparison"
+                            />
+                          </div>
+                          <MissingDataWarning
+                            excludedMaterials={materials
+                              .filter(material => selectedAnalyticsMaterials.includes(material['Material Name']))
+                              .filter(material => {
                                 const waterStr = String(material['Water Consumption (L/kg)'] || '').toUpperCase();
-                                // Check for N/A - return null to exclude from chart
-                                if (waterStr.includes('N/A') || !waterStr.match(/[\d.]+/)) return null;
-                                const match = waterStr.match(/[\d.]+/);
-                                return match ? parseFloat(match[0]) : null;
-                              })()
-                            }))
-                            .filter(item => item.water !== null) // Include 0, exclude only null (N/A)
-                            .sort((a, b) => a.water - b.water)}>
-                            <CartesianGrid strokeDasharray="3 3" />
-                            <XAxis dataKey="name" angle={-45} textAnchor="end" height={60} fontSize={10} />
-                            <YAxis />
-                            <Tooltip content={<CustomTooltip unit="L/kg" />} />
-                            <Bar dataKey="water" fill="#06b6d4" />
-                          </BarChart>
-                        </ResponsiveContainer>
-                      </div>
-
-                      {/* Energy Consumption */}
-                      <div className="bg-white rounded-xl shadow-lg p-6" id="energy-consumption-chart">
-                        <div className="flex justify-between items-start mb-4">
-                          <h2 className="text-xl font-bold text-gray-900">Energy Consumption Comparison</h2>
-                          <ChartExportButtons
-                            chartId="energy-consumption-chart"
-                            filename="energy_consumption_comparison"
+                                // 0 is a valid value (zero water consumption), only N/A or missing data is invalid
+                                return waterStr.includes('N/A') || !waterStr.match(/[\d.]+/);
+                              })
+                              .map(material => ({ name: material['Material Name'], reason: 'no water data' }))}
                           />
+                          <ResponsiveContainer width="100%" height={250}>
+                            <BarChart data={materials
+                              .filter(material => selectedAnalyticsMaterials.includes(material['Material Name']))
+                              .map(material => ({
+                                name: (material['Material Name'] || '').length > 8 ?
+                                  (material['Material Name'] || '').substring(0, 8) + '...' :
+                                  (material['Material Name'] || ''),
+                                fullName: material['Material Name'] || '',
+                                water: (() => {
+                                  const waterStr = String(material['Water Consumption (L/kg)'] || '').toUpperCase();
+                                  // Check for N/A - return null to exclude from chart
+                                  if (waterStr.includes('N/A') || !waterStr.match(/[\d.]+/)) return null;
+                                  const match = waterStr.match(/[\d.]+/);
+                                  return match ? parseFloat(match[0]) : null;
+                                })()
+                              }))
+                              .filter(item => item.water !== null) // Include 0, exclude only null (N/A)
+                              .sort((a, b) => a.water - b.water)}>
+                              <CartesianGrid strokeDasharray="3 3" />
+                              <XAxis dataKey="name" angle={-45} textAnchor="end" height={60} fontSize={10} />
+                              <YAxis />
+                              <Tooltip content={<CustomTooltip unit="L/kg" />} />
+                              <Bar dataKey="water" fill="#06b6d4" />
+                            </BarChart>
+                          </ResponsiveContainer>
                         </div>
-                        <MissingDataWarning
-                          excludedMaterials={materials
-                            .filter(material => selectedAnalyticsMaterials.includes(material['Material Name']))
-                            .filter(material => {
-                              const energyStr = String(material['Energy Use (MJ/kg)'] || '').toUpperCase();
-                              // 0 is a valid value (zero energy consumption), only N/A or missing data is invalid
-                              return energyStr.includes('N/A') || !energyStr.match(/[\d.]+/);
-                            })
-                            .map(material => ({ name: material['Material Name'], reason: 'no energy data' }))}
-                        />
-                        <ResponsiveContainer width="100%" height={250}>
-                          <BarChart data={materials
-                            .filter(material => selectedAnalyticsMaterials.includes(material['Material Name']))
-                            .map(material => ({
-                              name: (material['Material Name'] || '').length > 8 ?
-                                     (material['Material Name'] || '').substring(0, 8) + '...' :
-                                     (material['Material Name'] || ''),
-                              fullName: material['Material Name'] || '',
-                              energy: (() => {
+
+                        {/* Energy Consumption */}
+                        <div className="bg-white rounded-xl shadow-lg p-6" id="energy-consumption-chart">
+                          <div className="flex justify-between items-start mb-4">
+                            <h2 className="text-xl font-bold text-gray-900">Energy Consumption Comparison</h2>
+                            <ChartExportButtons
+                              chartId="energy-consumption-chart"
+                              filename="energy_consumption_comparison"
+                            />
+                          </div>
+                          <MissingDataWarning
+                            excludedMaterials={materials
+                              .filter(material => selectedAnalyticsMaterials.includes(material['Material Name']))
+                              .filter(material => {
                                 const energyStr = String(material['Energy Use (MJ/kg)'] || '').toUpperCase();
-                                // Check for N/A - return null to exclude from chart
-                                if (energyStr.includes('N/A') || !energyStr.match(/[\d.]+/)) return null;
-                                const match = energyStr.match(/[\d.]+/);
-                                return match ? parseFloat(match[0]) : null;
-                              })()
-                            }))
-                            .filter(item => item.energy !== null) // Include 0, exclude only null (N/A)
-                            .sort((a, b) => a.energy - b.energy)}>
-                            <CartesianGrid strokeDasharray="3 3" />
-                            <XAxis dataKey="name" angle={-45} textAnchor="end" height={60} fontSize={10} />
-                            <YAxis />
-                            <Tooltip content={<CustomTooltip unit="MJ/kg" />} />
-                            <Bar dataKey="energy" fill="#f59e0b" />
-                          </BarChart>
-                        </ResponsiveContainer>
+                                // 0 is a valid value (zero energy consumption), only N/A or missing data is invalid
+                                return energyStr.includes('N/A') || !energyStr.match(/[\d.]+/);
+                              })
+                              .map(material => ({ name: material['Material Name'], reason: 'no energy data' }))}
+                          />
+                          <ResponsiveContainer width="100%" height={250}>
+                            <BarChart data={materials
+                              .filter(material => selectedAnalyticsMaterials.includes(material['Material Name']))
+                              .map(material => ({
+                                name: (material['Material Name'] || '').length > 8 ?
+                                  (material['Material Name'] || '').substring(0, 8) + '...' :
+                                  (material['Material Name'] || ''),
+                                fullName: material['Material Name'] || '',
+                                energy: (() => {
+                                  const energyStr = String(material['Energy Use (MJ/kg)'] || '').toUpperCase();
+                                  // Check for N/A - return null to exclude from chart
+                                  if (energyStr.includes('N/A') || !energyStr.match(/[\d.]+/)) return null;
+                                  const match = energyStr.match(/[\d.]+/);
+                                  return match ? parseFloat(match[0]) : null;
+                                })()
+                              }))
+                              .filter(item => item.energy !== null) // Include 0, exclude only null (N/A)
+                              .sort((a, b) => a.energy - b.energy)}>
+                              <CartesianGrid strokeDasharray="3 3" />
+                              <XAxis dataKey="name" angle={-45} textAnchor="end" height={60} fontSize={10} />
+                              <YAxis />
+                              <Tooltip content={<CustomTooltip unit="MJ/kg" />} />
+                              <Bar dataKey="energy" fill="#f59e0b" />
+                            </BarChart>
+                          </ResponsiveContainer>
+                        </div>
+
+                        {/* Fossil Fuel Consumption */}
+                        <div className="bg-white rounded-xl shadow-lg p-6" id="fuel-consumption-chart">
+                          <div className="flex justify-between items-start mb-4">
+                            <div>
+                              <h2 className="text-xl font-bold text-gray-900">Fossil Fuel Consumption Comparison</h2>
+                              <p className="text-sm text-gray-600">Fuel consumption levels (0=N/A, 1=Very Low, 6=Very High)</p>
+                            </div>
+                            <ChartExportButtons
+                              chartId="fuel-consumption-chart"
+                              filename="fuel_consumption_comparison"
+                            />
+                          </div>
+                          {/* Fuel Consumption is qualitative - always present, no N/A warning needed */}
+                          <ResponsiveContainer width="100%" height={250}>
+                            <BarChart data={materials
+                              .filter(material => selectedAnalyticsMaterials.includes(material['Material Name']))
+                              .map(material => ({
+                                name: (material['Material Name'] || '').length > 8 ?
+                                  (material['Material Name'] || '').substring(0, 8) + '...' :
+                                  (material['Material Name'] || ''),
+                                fullName: material['Material Name'] || '',
+                                fuel: (() => {
+                                  const fuelStr = String(material['Fuel Consumption (MJ/kg)'] || '').toLowerCase().trim();
+
+                                  // Check if it's a number first
+                                  const num = parseFloat(fuelStr);
+                                  if (!isNaN(num)) {
+                                    return Math.max(1, Math.min(num, 6));
+                                  }
+
+                                  // Convert qualitative values to 1-6 scale
+                                  if (fuelStr.includes('veryhigh') || fuelStr.includes('very high')) return 6;
+                                  if (fuelStr.includes('high')) return 5;
+                                  if (fuelStr.includes('mediumhigh') || fuelStr.includes('medium-high') || fuelStr.includes('medium high')) return 4.5;
+                                  if (fuelStr.includes('medium') || fuelStr.includes('moderate')) return 3.5;
+                                  if (fuelStr.includes('mediumlow') || fuelStr.includes('medium-low') || fuelStr.includes('medium low')) return 2.5;
+                                  if (fuelStr.includes('low')) return 2;
+                                  if (fuelStr.includes('verylow') || fuelStr.includes('very low')) return 1;
+
+                                  return 0;
+                                })()
+                              }))
+                              .filter(item => item.fuel > 0)
+                              .sort((a, b) => a.fuel - b.fuel)}>
+                              <CartesianGrid strokeDasharray="3 3" />
+                              <XAxis dataKey="name" angle={-45} textAnchor="end" height={60} fontSize={10} />
+                              <YAxis domain={[0, 6]} />
+                              <Tooltip content={<CustomTooltip unit="/6" />} />
+                              <Bar dataKey="fuel" fill="#8b5cf6" />
+                            </BarChart>
+                          </ResponsiveContainer>
+                        </div>
                       </div>
 
-                      {/* Fossil Fuel Consumption */}
-                      <div className="bg-white rounded-xl shadow-lg p-6" id="fuel-consumption-chart">
+                      {/* Sustainability Score Evaluation */}
+                      <div className="bg-white rounded-xl shadow-lg p-6" id="sustainability-evaluation-chart">
                         <div className="flex justify-between items-start mb-4">
                           <div>
-                            <h2 className="text-xl font-bold text-gray-900">Fossil Fuel Consumption Comparison</h2>
-                            <p className="text-sm text-gray-600">Fuel consumption levels (0=N/A, 1=Very Low, 6=Very High)</p>
+                            <h2 className="text-xl font-bold text-gray-900">
+                              Sustainability Score Evaluation
+                            </h2>
+                            <p className="text-sm text-gray-600">Sustainability scores of selected materials</p>
                           </div>
                           <ChartExportButtons
-                            chartId="fuel-consumption-chart"
-                            filename="fuel_consumption_comparison"
+                            chartId="sustainability-evaluation-chart"
+                            filename="sustainability_score_evaluation"
                           />
                         </div>
-                        {/* Fuel Consumption is qualitative - always present, no N/A warning needed */}
-                        <ResponsiveContainer width="100%" height={250}>
-                          <BarChart data={materials
+                        <MissingDataWarning
+                          excludedMaterials={materials
                             .filter(material => selectedAnalyticsMaterials.includes(material['Material Name']))
-                            .map(material => ({
-                              name: (material['Material Name'] || '').length > 8 ?
-                                     (material['Material Name'] || '').substring(0, 8) + '...' :
-                                     (material['Material Name'] || ''),
-                              fullName: material['Material Name'] || '',
-                              fuel: (() => {
-                                const fuelStr = String(material['Fuel Consumption (MJ/kg)'] || '').toLowerCase().trim();
-
-                                // Check if it's a number first
-                                const num = parseFloat(fuelStr);
-                                if (!isNaN(num)) {
-                                  return Math.max(1, Math.min(num, 6));
-                                }
-
-                                // Convert qualitative values to 1-6 scale
-                                if (fuelStr.includes('veryhigh') || fuelStr.includes('very high')) return 6;
-                                if (fuelStr.includes('high')) return 5;
-                                if (fuelStr.includes('mediumhigh') || fuelStr.includes('medium-high') || fuelStr.includes('medium high')) return 4.5;
-                                if (fuelStr.includes('medium') || fuelStr.includes('moderate')) return 3.5;
-                                if (fuelStr.includes('mediumlow') || fuelStr.includes('medium-low') || fuelStr.includes('medium low')) return 2.5;
-                                if (fuelStr.includes('low')) return 2;
-                                if (fuelStr.includes('verylow') || fuelStr.includes('very low')) return 1;
-
-                                return 0;
-                              })()
-                            }))
-                            .filter(item => item.fuel > 0)
-                            .sort((a, b) => a.fuel - b.fuel)}>
-                            <CartesianGrid strokeDasharray="3 3" />
-                            <XAxis dataKey="name" angle={-45} textAnchor="end" height={60} fontSize={10} />
-                            <YAxis domain={[0, 6]} />
-                            <Tooltip content={<CustomTooltip unit="/6" />} />
-                            <Bar dataKey="fuel" fill="#8b5cf6" />
-                          </BarChart>
-                        </ResponsiveContainer>
-                      </div>
-                    </div>
-
-                    {/* Sustainability Score Evaluation */}
-                    <div className="bg-white rounded-xl shadow-lg p-6" id="sustainability-evaluation-chart">
-                      <div className="flex justify-between items-start mb-4">
-                        <div>
-                          <h2 className="text-xl font-bold text-gray-900">
-                            Sustainability Score Evaluation
-                          </h2>
-                          <p className="text-sm text-gray-600">Sustainability scores of selected materials</p>
-                        </div>
-                        <ChartExportButtons
-                          chartId="sustainability-evaluation-chart"
-                          filename="sustainability_score_evaluation"
+                            .filter(material => {
+                              const score = parseFloat(material['Sustainability Score']) || 0;
+                              const scoreStr = String(material['Sustainability Score'] || '').toUpperCase();
+                              return score === 0 || scoreStr.includes('N/A');
+                            })
+                            .map(material => ({ name: material['Material Name'], reason: 'no sustainability score' }))}
                         />
-                      </div>
-                      <MissingDataWarning
-                        excludedMaterials={materials
-                          .filter(material => selectedAnalyticsMaterials.includes(material['Material Name']))
-                          .filter(material => {
-                            const score = parseFloat(material['Sustainability Score']) || 0;
-                            const scoreStr = String(material['Sustainability Score'] || '').toUpperCase();
-                            return score === 0 || scoreStr.includes('N/A');
-                          })
-                          .map(material => ({ name: material['Material Name'], reason: 'no sustainability score' }))}
-                      />
-                      <ResponsiveContainer width="100%" height={350}>
-                        <BarChart data={(() => {
-                          const selectedMats = materials.filter(m => selectedAnalyticsMaterials.includes(m['Material Name']));
+                        <ResponsiveContainer width="100%" height={350}>
+                          <BarChart data={(() => {
+                            const selectedMats = materials.filter(m => selectedAnalyticsMaterials.includes(m['Material Name']));
 
-                          return selectedMats.map(material => {
-                            const score = parseFloat(material['Sustainability Score']) || 0;
+                            return selectedMats.map(material => {
+                              const score = parseFloat(material['Sustainability Score']) || 0;
 
-                            // Determine color based on score
-                            let color;
-                            if (score >= 8) color = '#10b981'; // Green - High
-                            else if (score >= 6) color = '#84cc16'; // Lime - Medium-High
-                            else if (score >= 4) color = '#f59e0b'; // Yellow - Medium
-                            else if (score >= 2) color = '#f97316'; // Orange - Low-Medium
-                            else color = '#ef4444'; // Red - Low
-
-                            return {
-                              name: material['Material Name'],
-                              fullName: material['Material Name'],
-                              score: score,
-                              fill: color
-                            };
-                          }).sort((a, b) => b.score - a.score); // Sort by score descending
-                        })()}>
-                          <CartesianGrid strokeDasharray="3 3" />
-                          <XAxis
-                            dataKey="name"
-                            angle={-45}
-                            textAnchor="end"
-                            height={120}
-                            interval={0}
-                            tick={{ fontSize: 11 }}
-                          />
-                          <YAxis
-                            label={{ value: 'Sustainability Score', angle: -90, position: 'insideLeft', fontSize: 12 }}
-                            domain={[0, 10]}
-                          />
-                          <Tooltip content={<CustomTooltip unit="" />} />
-                          <Bar dataKey="score" radius={[8, 8, 0, 0]}>
-                            {(() => {
-                              const selectedMats = materials.filter(m => selectedAnalyticsMaterials.includes(m['Material Name']));
-                              return selectedMats.map((material, index) => {
-                                const score = parseFloat(material['Sustainability Score']) || 0;
-                                let color;
-                                if (score >= 8) color = '#10b981';
-                                else if (score >= 6) color = '#84cc16';
-                                else if (score >= 4) color = '#f59e0b';
-                                else if (score >= 2) color = '#f97316';
-                                else color = '#ef4444';
-                                return <Cell key={`cell-${index}`} fill={color} />;
-                              });
-                            })()}
-                          </Bar>
-                        </BarChart>
-                      </ResponsiveContainer>
-                      <div className="mt-4 p-4 bg-green-50 rounded-lg">
-                        <p className="text-sm text-gray-700">
-                          <strong>Interpretation:</strong> This chart displays the sustainability score for each selected material.
-                          Materials are sorted from highest to lowest score. Green bars indicate highly sustainable materials (8-10), while red bars indicate low sustainability (0-2).
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Multi-criteria Analysis */}
-                    <div className="bg-white rounded-xl shadow-lg p-6" id="multi-criteria-chart">
-                      <div className="flex justify-between items-start mb-4">
-                        <h2 className="text-xl font-bold text-gray-900">
-                          Multi-Criteria Analysis: Durability vs Environmental Impact
-                        </h2>
-                        <ChartExportButtons
-                          chartId="multi-criteria-chart"
-                          filename="multi_criteria_analysis"
-                        />
-                      </div>
-                      {/* Multi-criteria uses only QUALITATIVE fields (Durability, Environmental Impact) - always present
-                          No N/A warning needed since these fields are always populated */}
-                      <ResponsiveContainer width="100%" height={300}>
-                        <ScatterChart data={(() => {
-                          // Map materials to data points
-                          const dataPoints = materials
-                            .filter(material => selectedAnalyticsMaterials.includes(material['Material Name']))
-                            .map(material => ({
-                              name: material['Material Name'],
-                              durability: (() => {
-                                const durStr = (material['Durability'] || '').toLowerCase().trim();
-                                if (durStr.includes('very high')) return 6;
-                                if (durStr.includes('medium-high') || durStr.includes('medium high')) return 4;
-                                if (durStr === 'high' || (durStr.includes('high') && !durStr.includes('medium'))) return 5;
-                                if (durStr === 'medium' || (durStr.includes('medium') && !durStr.includes('low') && !durStr.includes('high'))) return 3;
-                                if (durStr.includes('medium-low') || durStr.includes('medium low')) return 2;
-                                if (durStr.includes('low') && !durStr.includes('medium')) return 1;
-                                return 0;
-                              })(),
-                              durabilityLabel: material['Durability'] || 'N/A',
-                              environmentalImpact: (() => {
-                                const envStr = (material['Environmental_Sustainability'] || '').toLowerCase().trim();
-                                if (envStr.includes('very high')) return 6;
-                                if (envStr.includes('medium-high') || envStr.includes('medium high')) return 4;
-                                if (envStr === 'high' || (envStr.includes('high') && !envStr.includes('medium'))) return 5;
-                                if (envStr === 'medium' || (envStr.includes('medium') && !envStr.includes('low') && !envStr.includes('high'))) return 3;
-                                if (envStr.includes('medium-low') || envStr.includes('medium low')) return 2;
-                                if (envStr.includes('low') && !envStr.includes('medium')) return 1;
-                                return 0;
-                              })(),
-                              environmentalImpactLabel: material['Environmental_Sustainability'] || 'N/A'
-                            }))
-                            .filter(item => item.environmentalImpact > 0 && item.durability > 0);
-
-                          // Group materials with same coordinates
-                          const grouped = {};
-                          dataPoints.forEach(item => {
-                            const key = `${item.durability}-${item.environmentalImpact}`;
-                            if (!grouped[key]) {
-                              grouped[key] = {
-                                durability: item.durability,
-                                environmentalImpact: item.environmentalImpact,
-                                durabilityLabel: item.durabilityLabel,
-                                environmentalImpactLabel: item.environmentalImpactLabel,
-                                materials: []
-                              };
-                            }
-                            grouped[key].materials.push(item.name);
-                          });
-
-                          return Object.values(grouped);
-                        })()}>
-                          <CartesianGrid />
-                          <XAxis type="number" dataKey="durability" name="Durability" domain={[1, 6]} ticks={[1, 2, 3, 4, 5, 6]} />
-                          <YAxis type="number" dataKey="environmentalImpact" name="Environmental Impact" domain={[1, 6]} ticks={[1, 2, 3, 4, 5, 6]} />
-                          <Tooltip cursor={{ strokeDasharray: '3 3' }}
-                            content={({ active, payload }) => {
-                              if (active && payload && payload.length) {
-                                const data = payload[0].payload;
-                                return (
-                                  <div className="bg-white p-3 border border-gray-300 rounded shadow-lg max-w-xs">
-                                    <p className="font-bold text-gray-900 mb-2">
-                                      {data.materials.length > 1
-                                        ? `${data.materials.length} Materials`
-                                        : data.materials[0]}
-                                    </p>
-                                    {data.materials.length > 1 && (
-                                      <div className="mb-2 max-h-32 overflow-y-auto">
-                                        {data.materials.map((mat, idx) => (
-                                          <p key={idx} className="text-xs text-gray-600">• {mat}</p>
-                                        ))}
-                                      </div>
-                                    )}
-                                    <p className="text-sm text-gray-700">
-                                      Durability: <span className="font-semibold">{data.durabilityLabel} ({data.durability}/6)</span>
-                                    </p>
-                                    <p className="text-sm text-gray-700">
-                                      Environmental Impact: <span className="font-semibold">{data.environmentalImpactLabel} ({data.environmentalImpact}/6)</span>
-                                    </p>
-                                  </div>
-                                );
-                              }
-                              return null;
-                            }}
-                          />
-                          <Scatter name="Materials" dataKey="environmentalImpact" fill="#3b82f6" />
-                        </ScatterChart>
-                      </ResponsiveContainer>
-                    </div>
-
-                    {/* ComposedChart: Cost vs Sustainability Correlation */}
-                    <div className="bg-white rounded-xl shadow-lg p-6" id="cost-sustainability-chart">
-                      <div className="flex justify-between items-start mb-4">
-                        <div>
-                          <h2 className="text-xl font-bold text-gray-900">
-                            Cost vs Sustainability Correlation
-                          </h2>
-                          <p className="text-sm text-gray-600">Analyzing the relationship between material cost and sustainability score</p>
-                        </div>
-                        <ChartExportButtons
-                          chartId="cost-sustainability-chart"
-                          filename="cost_sustainability_correlation"
-                        />
-                      </div>
-                      {/* Warning for excluded materials */}
-                      <MissingDataWarning
-                        excludedMaterials={(() => {
-                          const allMaterialsData = materials
-                            .filter(material => selectedAnalyticsMaterials.includes(material['Material Name']))
-                            .map(material => {
-                              const costStr = String(material['Cost Range ($/kg)'] || '').toUpperCase();
-                              const sustainStr = String(material['Sustainability Score'] || '').toUpperCase();
+                              // Determine color based on score
+                              let color;
+                              if (score >= 8) color = '#10b981'; // Green - High
+                              else if (score >= 6) color = '#84cc16'; // Lime - Medium-High
+                              else if (score >= 4) color = '#f59e0b'; // Yellow - Medium
+                              else if (score >= 2) color = '#f97316'; // Orange - Low-Medium
+                              else color = '#ef4444'; // Red - Low
 
                               return {
                                 name: material['Material Name'],
+                                fullName: material['Material Name'],
+                                score: score,
+                                fill: color
+                              };
+                            }).sort((a, b) => b.score - a.score); // Sort by score descending
+                          })()}>
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis
+                              dataKey="name"
+                              angle={-45}
+                              textAnchor="end"
+                              height={120}
+                              interval={0}
+                              tick={{ fontSize: 11 }}
+                            />
+                            <YAxis
+                              label={{ value: 'Sustainability Score', angle: -90, position: 'insideLeft', fontSize: 12 }}
+                              domain={[0, 10]}
+                            />
+                            <Tooltip content={<CustomTooltip unit="" />} />
+                            <Bar dataKey="score" radius={[8, 8, 0, 0]}>
+                              {(() => {
+                                const selectedMats = materials.filter(m => selectedAnalyticsMaterials.includes(m['Material Name']));
+                                return selectedMats.map((material, index) => {
+                                  const score = parseFloat(material['Sustainability Score']) || 0;
+                                  let color;
+                                  if (score >= 8) color = '#10b981';
+                                  else if (score >= 6) color = '#84cc16';
+                                  else if (score >= 4) color = '#f59e0b';
+                                  else if (score >= 2) color = '#f97316';
+                                  else color = '#ef4444';
+                                  return <Cell key={`cell-${index}`} fill={color} />;
+                                });
+                              })()}
+                            </Bar>
+                          </BarChart>
+                        </ResponsiveContainer>
+                        <div className="mt-4 p-4 bg-green-50 rounded-lg">
+                          <p className="text-sm text-gray-700">
+                            <strong>Interpretation:</strong> This chart displays the sustainability score for each selected material.
+                            Materials are sorted from highest to lowest score. Green bars indicate highly sustainable materials (8-10), while red bars indicate low sustainability (0-2).
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Multi-criteria Analysis */}
+                      <div className="bg-white rounded-xl shadow-lg p-6" id="multi-criteria-chart">
+                        <div className="flex justify-between items-start mb-4">
+                          <h2 className="text-xl font-bold text-gray-900">
+                            Multi-Criteria Analysis: Durability vs Environmental Impact
+                          </h2>
+                          <ChartExportButtons
+                            chartId="multi-criteria-chart"
+                            filename="multi_criteria_analysis"
+                          />
+                        </div>
+                        {/* Multi-criteria uses only QUALITATIVE fields (Durability, Environmental Impact) - always present
+                          No N/A warning needed since these fields are always populated */}
+                        <ResponsiveContainer width="100%" height={300}>
+                          <ScatterChart data={(() => {
+                            // Map materials to data points
+                            const dataPoints = materials
+                              .filter(material => selectedAnalyticsMaterials.includes(material['Material Name']))
+                              .map(material => ({
+                                name: material['Material Name'],
+                                durability: (() => {
+                                  const durStr = (material['Durability'] || '').toLowerCase().trim();
+                                  if (durStr.includes('very high')) return 6;
+                                  if (durStr.includes('medium-high') || durStr.includes('medium high')) return 4;
+                                  if (durStr === 'high' || (durStr.includes('high') && !durStr.includes('medium'))) return 5;
+                                  if (durStr === 'medium' || (durStr.includes('medium') && !durStr.includes('low') && !durStr.includes('high'))) return 3;
+                                  if (durStr.includes('medium-low') || durStr.includes('medium low')) return 2;
+                                  if (durStr.includes('low') && !durStr.includes('medium')) return 1;
+                                  return 0;
+                                })(),
+                                durabilityLabel: material['Durability'] || 'N/A',
+                                environmentalImpact: (() => {
+                                  const envStr = (material['Environmental_Sustainability'] || '').toLowerCase().trim();
+                                  if (envStr.includes('very high')) return 6;
+                                  if (envStr.includes('medium-high') || envStr.includes('medium high')) return 4;
+                                  if (envStr === 'high' || (envStr.includes('high') && !envStr.includes('medium'))) return 5;
+                                  if (envStr === 'medium' || (envStr.includes('medium') && !envStr.includes('low') && !envStr.includes('high'))) return 3;
+                                  if (envStr.includes('medium-low') || envStr.includes('medium low')) return 2;
+                                  if (envStr.includes('low') && !envStr.includes('medium')) return 1;
+                                  return 0;
+                                })(),
+                                environmentalImpactLabel: material['Environmental_Sustainability'] || 'N/A'
+                              }))
+                              .filter(item => item.environmentalImpact > 0 && item.durability > 0);
+
+                            // Group materials with same coordinates
+                            const grouped = {};
+                            dataPoints.forEach(item => {
+                              const key = `${item.durability}-${item.environmentalImpact}`;
+                              if (!grouped[key]) {
+                                grouped[key] = {
+                                  durability: item.durability,
+                                  environmentalImpact: item.environmentalImpact,
+                                  durabilityLabel: item.durabilityLabel,
+                                  environmentalImpactLabel: item.environmentalImpactLabel,
+                                  materials: []
+                                };
+                              }
+                              grouped[key].materials.push(item.name);
+                            });
+
+                            return Object.values(grouped);
+                          })()}>
+                            <CartesianGrid />
+                            <XAxis type="number" dataKey="durability" name="Durability" domain={[1, 6]} ticks={[1, 2, 3, 4, 5, 6]} />
+                            <YAxis type="number" dataKey="environmentalImpact" name="Environmental Impact" domain={[1, 6]} ticks={[1, 2, 3, 4, 5, 6]} />
+                            <Tooltip cursor={{ strokeDasharray: '3 3' }}
+                              content={({ active, payload }) => {
+                                if (active && payload && payload.length) {
+                                  const data = payload[0].payload;
+                                  return (
+                                    <div className="bg-white p-3 border border-gray-300 rounded shadow-lg max-w-xs">
+                                      <p className="font-bold text-gray-900 mb-2">
+                                        {data.materials.length > 1
+                                          ? `${data.materials.length} Materials`
+                                          : data.materials[0]}
+                                      </p>
+                                      {data.materials.length > 1 && (
+                                        <div className="mb-2 max-h-32 overflow-y-auto">
+                                          {data.materials.map((mat, idx) => (
+                                            <p key={idx} className="text-xs text-gray-600">• {mat}</p>
+                                          ))}
+                                        </div>
+                                      )}
+                                      <p className="text-sm text-gray-700">
+                                        Durability: <span className="font-semibold">{data.durabilityLabel} ({data.durability}/6)</span>
+                                      </p>
+                                      <p className="text-sm text-gray-700">
+                                        Environmental Impact: <span className="font-semibold">{data.environmentalImpactLabel} ({data.environmentalImpact}/6)</span>
+                                      </p>
+                                    </div>
+                                  );
+                                }
+                                return null;
+                              }}
+                            />
+                            <Scatter name="Materials" dataKey="environmentalImpact" fill="#3b82f6" />
+                          </ScatterChart>
+                        </ResponsiveContainer>
+                      </div>
+
+                      {/* ComposedChart: Cost vs Sustainability Correlation */}
+                      <div className="bg-white rounded-xl shadow-lg p-6" id="cost-sustainability-chart">
+                        <div className="flex justify-between items-start mb-4">
+                          <div>
+                            <h2 className="text-xl font-bold text-gray-900">
+                              Cost vs Sustainability Correlation
+                            </h2>
+                            <p className="text-sm text-gray-600">Analyzing the relationship between material cost and sustainability score</p>
+                          </div>
+                          <ChartExportButtons
+                            chartId="cost-sustainability-chart"
+                            filename="cost_sustainability_correlation"
+                          />
+                        </div>
+                        {/* Warning for excluded materials */}
+                        <MissingDataWarning
+                          excludedMaterials={(() => {
+                            const allMaterialsData = materials
+                              .filter(material => selectedAnalyticsMaterials.includes(material['Material Name']))
+                              .map(material => {
+                                const costStr = String(material['Cost Range ($/kg)'] || '').toUpperCase();
+                                const sustainStr = String(material['Sustainability Score'] || '').toUpperCase();
+
+                                return {
+                                  name: material['Material Name'],
+                                  cost: (() => {
+                                    if (costStr.includes('N/A')) return 0;
+                                    const match = costStr.match(/[\d.]+/);
+                                    return match ? parseFloat(match[0]) : 0;
+                                  })(),
+                                  sustainability: (() => {
+                                    if (sustainStr.includes('N/A')) return 0;
+                                    return parseFloat(material['Sustainability Score']) || 0;
+                                  })(),
+                                  hasCostNA: costStr.includes('N/A'),
+                                  hasSustainNA: sustainStr.includes('N/A')
+                                };
+                              });
+
+                            return allMaterialsData
+                              .filter(item => item.cost <= 0 || item.sustainability <= 0)
+                              .map(material => {
+                                const reasons = [];
+                                if (material.cost <= 0) reasons.push('no cost');
+                                if (material.sustainability <= 0) reasons.push('no score');
+                                return {
+                                  name: material.name,
+                                  reason: reasons.join(', ')
+                                };
+                              });
+                          })()}
+                        />
+                        <ResponsiveContainer width="100%" height={350}>
+                          <ComposedChart
+                            data={materials
+                              .filter(material => selectedAnalyticsMaterials.includes(material['Material Name']))
+                              .map(material => ({
+                                name: (material['Material Name'] || '').length > 10 ?
+                                  (material['Material Name'] || '').substring(0, 10) + '...' :
+                                  (material['Material Name'] || ''),
+                                fullName: material['Material Name'],
                                 cost: (() => {
-                                  if (costStr.includes('N/A')) return 0;
+                                  const costStr = material['Cost Range ($/kg)'] || '';
                                   const match = costStr.match(/[\d.]+/);
                                   return match ? parseFloat(match[0]) : 0;
                                 })(),
-                                sustainability: (() => {
-                                  if (sustainStr.includes('N/A')) return 0;
-                                  return parseFloat(material['Sustainability Score']) || 0;
-                                })(),
-                                hasCostNA: costStr.includes('N/A'),
-                                hasSustainNA: sustainStr.includes('N/A')
-                              };
-                            });
-
-                          return allMaterialsData
-                            .filter(item => item.cost <= 0 || item.sustainability <= 0)
-                            .map(material => {
-                              const reasons = [];
-                              if (material.cost <= 0) reasons.push('no cost');
-                              if (material.sustainability <= 0) reasons.push('no score');
-                              return {
-                                name: material.name,
-                                reason: reasons.join(', ')
-                              };
-                            });
-                        })()}
-                      />
-                      <ResponsiveContainer width="100%" height={350}>
-                        <ComposedChart
-                          data={materials
-                            .filter(material => selectedAnalyticsMaterials.includes(material['Material Name']))
-                            .map(material => ({
-                              name: (material['Material Name'] || '').length > 10 ?
-                                     (material['Material Name'] || '').substring(0, 10) + '...' :
-                                     (material['Material Name'] || ''),
-                              fullName: material['Material Name'],
-                              cost: (() => {
-                                const costStr = material['Cost Range ($/kg)'] || '';
-                                const match = costStr.match(/[\d.]+/);
-                                return match ? parseFloat(match[0]) : 0;
-                              })(),
-                              sustainability: parseFloat(material['Sustainability Score']) || 0
-                            }))
-                            .filter(item => item.cost > 0 && item.sustainability > 0)
-                            .sort((a, b) => b.cost - a.cost)}>
-                          <CartesianGrid strokeDasharray="3 3" />
-                          <XAxis
-                            dataKey="name"
-                            angle={-45}
-                            textAnchor="end"
-                            height={80}
-                            fontSize={10}
-                            label={{ value: 'Material Name', position: 'insideBottom', offset: -10, fontSize: 12 }}
-                          />
-                          <YAxis
-                            yAxisId="left"
-                            label={{ value: 'Cost ($/kg)', angle: -90, position: 'insideLeft', fontSize: 12 }}
-                          />
-                          <YAxis
-                            yAxisId="right"
-                            orientation="right"
-                            domain={[0, 10]}
-                            label={{ value: 'Sustainability Score', angle: 90, position: 'insideRight', fontSize: 12 }}
-                          />
-                          <Tooltip
-                            formatter={(value, name, props) => {
-                              if (name === 'cost') {
-                                return [`$${value}/kg`, 'Cost'];
-                              } else if (name === 'sustainability') {
-                                return [value, 'Sustainability Score'];
-                              }
-                              return [value, name];
-                            }}
-                            labelFormatter={(label, payload) => {
-                              if (payload && payload.length > 0) {
-                                return `Material: ${payload[0].payload.fullName}`;
-                              }
-                              return label;
-                            }}
-                          />
-                          <Legend
-                            wrapperStyle={{ paddingTop: '20px' }}
-                            formatter={(value) => {
-                              if (value === 'cost') return 'Cost ($/kg)';
-                              if (value === 'sustainability') return 'Sustainability Score';
-                              return value;
-                            }}
-                          />
-                          <Bar yAxisId="left" dataKey="cost" fill="#8b5cf6" name="cost" />
-                          <Line
-                            yAxisId="right"
-                            type="monotone"
-                            dataKey="sustainability"
-                            stroke="#10b981"
-                            strokeWidth={3}
-                            dot={{ fill: '#10b981', r: 5 }}
-                            name="sustainability"
-                          />
-                        </ComposedChart>
-                      </ResponsiveContainer>
-                      <div className="mt-4 p-4 bg-blue-50 rounded-lg">
-                        <p className="text-sm text-gray-700">
-                          <strong>Interpretation:</strong> This chart shows the trade-off between cost and sustainability.
-                          Higher sustainability scores with lower costs indicate optimal material choices.
-                          Materials are sorted by cost from highest to lowest (left to right).
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Radar Charts Section */}
-                    <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl p-6 border-2 border-purple-200">
-                      <h2 className="text-2xl font-bold text-gray-900 mb-2">📊 Radar Charts - Material Profiles</h2>
-                      <p className="text-sm text-gray-600 mb-6">Multi-dimensional comparison of material properties</p>
-                    </div>
-
-                    {/* Single Material Environmental Profile */}
-                    {selectedAnalyticsMaterials.length > 0 && (
-                      <div className="bg-white rounded-xl shadow-lg p-6" id="radar-single-chart">
-                        <div className="flex justify-between items-start mb-4">
-                          <div className="flex-1">
-                            <h2 className="text-xl font-bold text-gray-900 mb-2">
-                              Single Material Environmental Profile (Normalized)
-                            </h2>
-                            <p className="text-sm text-gray-600 mb-3">Select a material to view its environmental profile</p>
-                            <select
-                              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 text-sm"
-                              value={singleRadarMaterial}
-                              onChange={(e) => setSingleRadarMaterial(e.target.value)}
-                            >
-                              <option value="">Choose a material...</option>
-                              {selectedAnalyticsMaterials.map(matName => (
-                                <option key={matName} value={matName}>{matName}</option>
-                              ))}
-                            </select>
-                          </div>
-                          {singleRadarMaterial && (
-                            <ChartExportButtons
-                              chartId="radar-single-chart"
-                              filename="radar_single_material_profile"
+                                sustainability: parseFloat(material['Sustainability Score']) || 0
+                              }))
+                              .filter(item => item.cost > 0 && item.sustainability > 0)
+                              .sort((a, b) => b.cost - a.cost)}>
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis
+                              dataKey="name"
+                              angle={-45}
+                              textAnchor="end"
+                              height={80}
+                              fontSize={10}
+                              label={{ value: 'Material Name', position: 'insideBottom', offset: -10, fontSize: 12 }}
                             />
+                            <YAxis
+                              yAxisId="left"
+                              label={{ value: 'Cost ($/kg)', angle: -90, position: 'insideLeft', fontSize: 12 }}
+                            />
+                            <YAxis
+                              yAxisId="right"
+                              orientation="right"
+                              domain={[0, 10]}
+                              label={{ value: 'Sustainability Score', angle: 90, position: 'insideRight', fontSize: 12 }}
+                            />
+                            <Tooltip
+                              formatter={(value, name, props) => {
+                                if (name === 'cost') {
+                                  return [`$${value}/kg`, 'Cost'];
+                                } else if (name === 'sustainability') {
+                                  return [value, 'Sustainability Score'];
+                                }
+                                return [value, name];
+                              }}
+                              labelFormatter={(label, payload) => {
+                                if (payload && payload.length > 0) {
+                                  return `Material: ${payload[0].payload.fullName}`;
+                                }
+                                return label;
+                              }}
+                            />
+                            <Legend
+                              wrapperStyle={{ paddingTop: '20px' }}
+                              formatter={(value) => {
+                                if (value === 'cost') return 'Cost ($/kg)';
+                                if (value === 'sustainability') return 'Sustainability Score';
+                                return value;
+                              }}
+                            />
+                            <Bar yAxisId="left" dataKey="cost" fill="#8b5cf6" name="cost" />
+                            <Line
+                              yAxisId="right"
+                              type="monotone"
+                              dataKey="sustainability"
+                              stroke="#10b981"
+                              strokeWidth={3}
+                              dot={{ fill: '#10b981', r: 5 }}
+                              name="sustainability"
+                            />
+                          </ComposedChart>
+                        </ResponsiveContainer>
+                        <div className="mt-4 p-4 bg-blue-50 rounded-lg">
+                          <p className="text-sm text-gray-700">
+                            <strong>Interpretation:</strong> This chart shows the trade-off between cost and sustainability.
+                            Higher sustainability scores with lower costs indicate optimal material choices.
+                            Materials are sorted by cost from highest to lowest (left to right).
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Radar Charts Section */}
+                      <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl p-6 border-2 border-purple-200">
+                        <h2 className="text-2xl font-bold text-gray-900 mb-2">📊 Radar Charts - Material Profiles</h2>
+                        <p className="text-sm text-gray-600 mb-6">Multi-dimensional comparison of material properties</p>
+                      </div>
+
+                      {/* Single Material Environmental Profile */}
+                      {selectedAnalyticsMaterials.length > 0 && (
+                        <div className="bg-white rounded-xl shadow-lg p-6" id="radar-single-chart">
+                          <div className="flex justify-between items-start mb-4">
+                            <div className="flex-1">
+                              <h2 className="text-xl font-bold text-gray-900 mb-2">
+                                Single Material Environmental Profile (Normalized)
+                              </h2>
+                              <p className="text-sm text-gray-600 mb-3">Select a material to view its environmental profile</p>
+                              <select
+                                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 text-sm"
+                                value={singleRadarMaterial}
+                                onChange={(e) => setSingleRadarMaterial(e.target.value)}
+                              >
+                                <option value="">Choose a material...</option>
+                                {selectedAnalyticsMaterials.map(matName => (
+                                  <option key={matName} value={matName}>{matName}</option>
+                                ))}
+                              </select>
+                            </div>
+                            {singleRadarMaterial && (
+                              <ChartExportButtons
+                                chartId="radar-single-chart"
+                                filename="radar_single_material_profile"
+                              />
+                            )}
+                          </div>
+                          {singleRadarMaterial ? (
+                            <>
+                              <MissingDataWarning
+                                excludedMaterials={(() => {
+                                  const selectedMat = materials.find(m => m['Material Name'] === singleRadarMaterial);
+                                  if (!selectedMat) return [];
+
+                                  const missingMetrics = [];
+                                  // Only check QUANTITATIVE fields (can be N/A)
+                                  const sustainability = parseFloat(selectedMat['Sustainability Score']) || 0;
+                                  const ghgStr = String(selectedMat['GHG Emissions (kg CO2e/kg)'] || '').toUpperCase();
+                                  const waterStr = String(selectedMat['Water Consumption (L/kg)'] || '').toUpperCase();
+                                  const energyStr = String(selectedMat['Energy Use (MJ/kg)'] || '').toUpperCase();
+
+                                  if (sustainability === 0 || String(selectedMat['Sustainability Score']).toUpperCase().includes('N/A')) {
+                                    missingMetrics.push('Sustainability Score');
+                                  }
+                                  if (!ghgStr.match(/[\d.]+/) || ghgStr.includes('N/A')) {
+                                    missingMetrics.push('GHG Emissions');
+                                  }
+                                  if (!waterStr.match(/[\d.]+/) || waterStr.includes('N/A')) {
+                                    missingMetrics.push('Water Consumption');
+                                  }
+                                  if (!energyStr.match(/[\d.]+/) || energyStr.includes('N/A')) {
+                                    missingMetrics.push('Energy Use');
+                                  }
+                                  // Fuel Consumption is QUALITATIVE - always present, no check needed
+
+                                  if (missingMetrics.length > 0) {
+                                    return [{ name: singleRadarMaterial, reason: missingMetrics.join(', ') }];
+                                  }
+                                  return [];
+                                })()}
+                              />
+                              <ResponsiveContainer width="100%" height={400}>
+                                <RadarChart data={(() => {
+                                  const selectedMat = materials.find(m => m['Material Name'] === singleRadarMaterial);
+                                  if (!selectedMat) return [];
+
+                                  // Helper function to keep values on 0-6 scale
+                                  const normalize = (value) => {
+                                    if (!value) return 0;
+                                    // Check for explicit N/A string
+                                    if (String(value).toUpperCase().includes('N/A')) return 0;
+                                    const num = parseFloat(value);
+                                    if (!isNaN(num)) {
+                                      return Math.max(0, Math.min(num, 6));
+                                    }
+                                    return 0;
+                                  };
+
+                                  return [
+                                    { metric: 'Sustainability', value: normalize(selectedMat['Sustainability Score']) },
+                                    {
+                                      metric: 'Low GHG', value: (() => {
+                                        const ghgStr = String(selectedMat['GHG Emissions (kg CO2e/kg)'] || '');
+                                        // Check for N/A - return 0 (no data)
+                                        if (ghgStr.toUpperCase().includes('N/A')) return 0;
+                                        const match = ghgStr.match(/[\d.]+/);
+                                        const ghg = match ? parseFloat(match[0]) : 0;
+                                        return Math.max(0, Math.min(6, 7 - (ghg / 10)));
+                                      })()
+                                    },
+                                    {
+                                      metric: 'Low Water', value: (() => {
+                                        const waterStr = String(selectedMat['Water Consumption (L/kg)'] || '');
+                                        // Check for N/A - return 0 (no data)
+                                        if (waterStr.toUpperCase().includes('N/A')) return 0;
+                                        const match = waterStr.match(/[\d.]+/);
+                                        const water = match ? parseFloat(match[0]) : 0;
+                                        return Math.max(0, Math.min(6, 7 - (water / 200)));
+                                      })()
+                                    },
+                                    {
+                                      metric: 'Low Energy', value: (() => {
+                                        const energyStr = String(selectedMat['Energy Use (MJ/kg)'] || '');
+                                        // Check for N/A - return 0 (no data)
+                                        if (energyStr.toUpperCase().includes('N/A')) return 0;
+                                        const match = energyStr.match(/[\d.]+/);
+                                        const energy = match ? parseFloat(match[0]) : 0;
+                                        return Math.max(0, Math.min(6, 7 - (energy / 20)));
+                                      })()
+                                    },
+                                    {
+                                      metric: 'Low Fossil Fuel', value: (() => {
+                                        const fuelStr = String(selectedMat['Fuel Consumption (MJ/kg)'] || '').toLowerCase().trim();
+
+                                        // Check if it's a number first
+                                        const match = fuelStr.match(/[\d.]+/);
+                                        if (match) {
+                                          const fuel = parseFloat(match[0]);
+                                          return Math.max(0, Math.min(6, 7 - (fuel / 20)));
+                                        }
+
+                                        // Handle qualitative values (inverted: Very High fuel = Low score)
+                                        if (fuelStr.includes('veryhigh') || fuelStr.includes('very high')) return 1;
+                                        if (fuelStr.includes('high') && !fuelStr.includes('medium')) return 2;
+                                        if (fuelStr.includes('mediumhigh') || fuelStr.includes('medium-high') || fuelStr.includes('medium high')) return 2.5;
+                                        if (fuelStr.includes('medium') && !fuelStr.includes('low') && !fuelStr.includes('high')) return 3.5;
+                                        if (fuelStr.includes('mediumlow') || fuelStr.includes('medium-low') || fuelStr.includes('medium low')) return 4.5;
+                                        if (fuelStr.includes('low') && !fuelStr.includes('medium')) return 5;
+                                        if (fuelStr.includes('verylow') || fuelStr.includes('very low')) return 6;
+
+                                        return 0;
+                                      })()
+                                    }
+                                  ];
+                                })()}>
+                                  <PolarGrid stroke="#e5e7eb" />
+                                  <PolarAngleAxis dataKey="metric" tick={{ fill: '#374151', fontSize: 12 }} />
+                                  <PolarRadiusAxis angle={90} domain={[0, 6]} tick={{ fill: '#6b7280', fontSize: 10 }} />
+                                  <Radar
+                                    name={singleRadarMaterial}
+                                    dataKey="value"
+                                    stroke="#10b981"
+                                    fill="#10b981"
+                                    fillOpacity={0.6}
+                                    strokeWidth={2}
+                                  />
+                                  <Tooltip />
+                                </RadarChart>
+                              </ResponsiveContainer>
+                            </>
+                          ) : (
+                            <div className="flex items-center justify-center h-64 bg-gray-50 rounded-lg">
+                              <p className="text-gray-500">Select a material from the dropdown above to view its profile</p>
+                            </div>
                           )}
                         </div>
-                        {singleRadarMaterial ? (
-                          <>
-                            <MissingDataWarning
-                              excludedMaterials={(() => {
-                                const selectedMat = materials.find(m => m['Material Name'] === singleRadarMaterial);
-                                if (!selectedMat) return [];
+                      )}
 
+                      {/* Radar Type 1: Multi Material Environmental Profile (normalized values) */}
+                      {selectedAnalyticsMaterials.length > 0 && (
+                        <div className="bg-white rounded-xl shadow-lg p-6" id="radar-1-chart">
+                          <div className="flex justify-between items-start mb-4">
+                            <div>
+                              <h2 className="text-xl font-bold text-gray-900">
+                                Multi Material Environmental Profile (Normalized)
+                              </h2>
+                              <p className="text-sm text-gray-600">Shows all selected materials with metrics on 1-6 scale</p>
+                            </div>
+                            <ChartExportButtons
+                              chartId="radar-1-chart"
+                              filename="radar_multi_material_profile"
+                            />
+                          </div>
+                          <MissingDataWarning
+                            excludedMaterials={materials
+                              .filter(material => selectedAnalyticsMaterials.includes(material['Material Name']))
+                              .map(material => {
                                 const missingMetrics = [];
                                 // Only check QUANTITATIVE fields (can be N/A)
-                                const sustainability = parseFloat(selectedMat['Sustainability Score']) || 0;
-                                const ghgStr = String(selectedMat['GHG Emissions (kg CO2e/kg)'] || '').toUpperCase();
-                                const waterStr = String(selectedMat['Water Consumption (L/kg)'] || '').toUpperCase();
-                                const energyStr = String(selectedMat['Energy Use (MJ/kg)'] || '').toUpperCase();
+                                const sustainability = parseFloat(material['Sustainability Score']) || 0;
+                                const ghgStr = String(material['GHG Emissions (kg CO2e/kg)'] || '').toUpperCase();
+                                const waterStr = String(material['Water Consumption (L/kg)'] || '').toUpperCase();
+                                const energyStr = String(material['Energy Use (MJ/kg)'] || '').toUpperCase();
 
-                                if (sustainability === 0 || String(selectedMat['Sustainability Score']).toUpperCase().includes('N/A')) {
-                                  missingMetrics.push('Sustainability Score');
+                                if (sustainability === 0 || String(material['Sustainability Score']).toUpperCase().includes('N/A')) {
+                                  missingMetrics.push('Sustainability');
                                 }
                                 if (!ghgStr.match(/[\d.]+/) || ghgStr.includes('N/A')) {
-                                  missingMetrics.push('GHG Emissions');
+                                  missingMetrics.push('GHG');
                                 }
                                 if (!waterStr.match(/[\d.]+/) || waterStr.includes('N/A')) {
-                                  missingMetrics.push('Water Consumption');
+                                  missingMetrics.push('Water');
                                 }
                                 if (!energyStr.match(/[\d.]+/) || energyStr.includes('N/A')) {
-                                  missingMetrics.push('Energy Use');
+                                  missingMetrics.push('Energy');
                                 }
                                 // Fuel Consumption is QUALITATIVE - always present, no check needed
 
-                                if (missingMetrics.length > 0) {
-                                  return [{ name: singleRadarMaterial, reason: missingMetrics.join(', ') }];
-                                }
-                                return [];
-                              })()}
-                            />
-                            <ResponsiveContainer width="100%" height={400}>
+                                return { name: material['Material Name'], metrics: missingMetrics };
+                              })
+                              .filter(item => item.metrics.length > 0)
+                              .map(item => ({ name: item.name, reason: item.metrics.join(', ') }))}
+                          />
+                          <ResponsiveContainer width="100%" height={400}>
                             <RadarChart data={(() => {
-                              const selectedMat = materials.find(m => m['Material Name'] === singleRadarMaterial);
-                              if (!selectedMat) return [];
+                              const selectedMats = materials.filter(m => selectedAnalyticsMaterials.includes(m['Material Name']));
 
                               // Helper function to keep values on 0-6 scale
                               const normalize = (value) => {
@@ -2059,297 +2114,172 @@ const SustainableMaterialsApp = () => {
                               };
 
                               return [
-                                { metric: 'Sustainability', value: normalize(selectedMat['Sustainability Score']) },
-                                { metric: 'Low GHG', value: (() => {
-                                  const ghgStr = String(selectedMat['GHG Emissions (kg CO2e/kg)'] || '');
-                                  // Check for N/A - return 0 (no data)
-                                  if (ghgStr.toUpperCase().includes('N/A')) return 0;
-                                  const match = ghgStr.match(/[\d.]+/);
-                                  const ghg = match ? parseFloat(match[0]) : 0;
-                                  return Math.max(0, Math.min(6, 7 - (ghg / 10)));
-                                })() },
-                                { metric: 'Low Water', value: (() => {
-                                  const waterStr = String(selectedMat['Water Consumption (L/kg)'] || '');
-                                  // Check for N/A - return 0 (no data)
-                                  if (waterStr.toUpperCase().includes('N/A')) return 0;
-                                  const match = waterStr.match(/[\d.]+/);
-                                  const water = match ? parseFloat(match[0]) : 0;
-                                  return Math.max(0, Math.min(6, 7 - (water / 200)));
-                                })() },
-                                { metric: 'Low Energy', value: (() => {
-                                  const energyStr = String(selectedMat['Energy Use (MJ/kg)'] || '');
-                                  // Check for N/A - return 0 (no data)
-                                  if (energyStr.toUpperCase().includes('N/A')) return 0;
-                                  const match = energyStr.match(/[\d.]+/);
-                                  const energy = match ? parseFloat(match[0]) : 0;
-                                  return Math.max(0, Math.min(6, 7 - (energy / 20)));
-                                })() },
-                                { metric: 'Low Fossil Fuel', value: (() => {
-                                  const fuelStr = String(selectedMat['Fuel Consumption (MJ/kg)'] || '').toLowerCase().trim();
+                                { metric: 'Sustainability', ...Object.fromEntries(selectedMats.map(m => [m['Material Name'], normalize(m['Sustainability Score'])])) },
+                                {
+                                  metric: 'Low GHG', ...Object.fromEntries(selectedMats.map(m => {
+                                    const ghgStr = String(m['GHG Emissions (kg CO2e/kg)'] || '');
+                                    // Check for N/A - return 0 (no data)
+                                    if (ghgStr.toUpperCase().includes('N/A')) return [m['Material Name'], 0];
+                                    const match = ghgStr.match(/[\d.]+/);
+                                    const ghg = match ? parseFloat(match[0]) : 0;
+                                    return [m['Material Name'], Math.max(0, Math.min(6, 7 - (ghg / 10)))];
+                                  }))
+                                },
+                                {
+                                  metric: 'Low Water', ...Object.fromEntries(selectedMats.map(m => {
+                                    const waterStr = String(m['Water Consumption (L/kg)'] || '');
+                                    // Check for N/A - return 0 (no data)
+                                    if (waterStr.toUpperCase().includes('N/A')) return [m['Material Name'], 0];
+                                    const match = waterStr.match(/[\d.]+/);
+                                    const water = match ? parseFloat(match[0]) : 0;
+                                    return [m['Material Name'], Math.max(0, Math.min(6, 7 - (water / 200)))];
+                                  }))
+                                },
+                                {
+                                  metric: 'Low Energy', ...Object.fromEntries(selectedMats.map(m => {
+                                    const energyStr = String(m['Energy Use (MJ/kg)'] || '');
+                                    // Check for N/A - return 0 (no data)
+                                    if (energyStr.toUpperCase().includes('N/A')) return [m['Material Name'], 0];
+                                    const match = energyStr.match(/[\d.]+/);
+                                    const energy = match ? parseFloat(match[0]) : 0;
+                                    return [m['Material Name'], Math.max(0, Math.min(6, 7 - (energy / 20)))];
+                                  }))
+                                },
+                                {
+                                  metric: 'Low Fossil Fuel', ...Object.fromEntries(selectedMats.map(m => {
+                                    const fuelStr = String(m['Fuel Consumption (MJ/kg)'] || '').toLowerCase().trim();
 
-                                  // Check if it's a number first
-                                  const match = fuelStr.match(/[\d.]+/);
-                                  if (match) {
-                                    const fuel = parseFloat(match[0]);
-                                    return Math.max(0, Math.min(6, 7 - (fuel / 20)));
-                                  }
+                                    // Check if it's a number first
+                                    const match = fuelStr.match(/[\d.]+/);
+                                    if (match) {
+                                      const fuel = parseFloat(match[0]);
+                                      return [m['Material Name'], Math.max(0, Math.min(6, 7 - (fuel / 20)))];
+                                    }
 
-                                  // Handle qualitative values (inverted: Very High fuel = Low score)
-                                  if (fuelStr.includes('veryhigh') || fuelStr.includes('very high')) return 1;
-                                  if (fuelStr.includes('high') && !fuelStr.includes('medium')) return 2;
-                                  if (fuelStr.includes('mediumhigh') || fuelStr.includes('medium-high') || fuelStr.includes('medium high')) return 2.5;
-                                  if (fuelStr.includes('medium') && !fuelStr.includes('low') && !fuelStr.includes('high')) return 3.5;
-                                  if (fuelStr.includes('mediumlow') || fuelStr.includes('medium-low') || fuelStr.includes('medium low')) return 4.5;
-                                  if (fuelStr.includes('low') && !fuelStr.includes('medium')) return 5;
-                                  if (fuelStr.includes('verylow') || fuelStr.includes('very low')) return 6;
+                                    // Handle qualitative values (inverted: Very High fuel = Low score)
+                                    if (fuelStr.includes('veryhigh') || fuelStr.includes('very high')) return [m['Material Name'], 1];
+                                    if (fuelStr.includes('high') && !fuelStr.includes('medium')) return [m['Material Name'], 2];
+                                    if (fuelStr.includes('mediumhigh') || fuelStr.includes('medium-high') || fuelStr.includes('medium high')) return [m['Material Name'], 2.5];
+                                    if (fuelStr.includes('medium') && !fuelStr.includes('low') && !fuelStr.includes('high')) return [m['Material Name'], 3.5];
+                                    if (fuelStr.includes('mediumlow') || fuelStr.includes('medium-low') || fuelStr.includes('medium low')) return [m['Material Name'], 4.5];
+                                    if (fuelStr.includes('low') && !fuelStr.includes('medium')) return [m['Material Name'], 5];
+                                    if (fuelStr.includes('verylow') || fuelStr.includes('very low')) return [m['Material Name'], 6];
 
-                                  return 0;
-                                })() }
+                                    return [m['Material Name'], 0];
+                                  }))
+                                }
                               ];
                             })()}>
                               <PolarGrid stroke="#e5e7eb" />
                               <PolarAngleAxis dataKey="metric" tick={{ fill: '#374151', fontSize: 12 }} />
                               <PolarRadiusAxis angle={90} domain={[0, 6]} tick={{ fill: '#6b7280', fontSize: 10 }} />
-                              <Radar
-                                name={singleRadarMaterial}
-                                dataKey="value"
-                                stroke="#10b981"
-                                fill="#10b981"
-                                fillOpacity={0.6}
-                                strokeWidth={2}
-                              />
+                              {selectedAnalyticsMaterials.map((matName, idx) => (
+                                <Radar
+                                  key={matName}
+                                  name={matName}
+                                  dataKey={matName}
+                                  stroke={['#8b5cf6', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#ec4899', '#06b6d4', '#84cc16'][idx % 8]}
+                                  fill={['#8b5cf6', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#ec4899', '#06b6d4', '#84cc16'][idx % 8]}
+                                  fillOpacity={0.3}
+                                />
+                              ))}
+                              <Legend />
                               <Tooltip />
                             </RadarChart>
                           </ResponsiveContainer>
-                          </>
-                        ) : (
-                          <div className="flex items-center justify-center h-64 bg-gray-50 rounded-lg">
-                            <p className="text-gray-500">Select a material from the dropdown above to view its profile</p>
-                          </div>
-                        )}
-                      </div>
-                    )}
-
-                    {/* Radar Type 1: Multi Material Environmental Profile (normalized values) */}
-                    {selectedAnalyticsMaterials.length > 0 && (
-                      <div className="bg-white rounded-xl shadow-lg p-6" id="radar-1-chart">
-                        <div className="flex justify-between items-start mb-4">
-                          <div>
-                            <h2 className="text-xl font-bold text-gray-900">
-                              Multi Material Environmental Profile (Normalized)
-                            </h2>
-                            <p className="text-sm text-gray-600">Shows all selected materials with metrics on 1-6 scale</p>
-                          </div>
-                          <ChartExportButtons
-                            chartId="radar-1-chart"
-                            filename="radar_multi_material_profile"
-                          />
                         </div>
-                        <MissingDataWarning
-                          excludedMaterials={materials
-                            .filter(material => selectedAnalyticsMaterials.includes(material['Material Name']))
-                            .map(material => {
-                              const missingMetrics = [];
-                              // Only check QUANTITATIVE fields (can be N/A)
-                              const sustainability = parseFloat(material['Sustainability Score']) || 0;
-                              const ghgStr = String(material['GHG Emissions (kg CO2e/kg)'] || '').toUpperCase();
-                              const waterStr = String(material['Water Consumption (L/kg)'] || '').toUpperCase();
-                              const energyStr = String(material['Energy Use (MJ/kg)'] || '').toUpperCase();
+                      )}
+                    </>
+                  )}
+                </>
+              )}
+            </div>
+          )}
 
-                              if (sustainability === 0 || String(material['Sustainability Score']).toUpperCase().includes('N/A')) {
-                                missingMetrics.push('Sustainability');
-                              }
-                              if (!ghgStr.match(/[\d.]+/) || ghgStr.includes('N/A')) {
-                                missingMetrics.push('GHG');
-                              }
-                              if (!waterStr.match(/[\d.]+/) || waterStr.includes('N/A')) {
-                                missingMetrics.push('Water');
-                              }
-                              if (!energyStr.match(/[\d.]+/) || energyStr.includes('N/A')) {
-                                missingMetrics.push('Energy');
-                              }
-                              // Fuel Consumption is QUALITATIVE - always present, no check needed
-
-                              return { name: material['Material Name'], metrics: missingMetrics };
-                            })
-                            .filter(item => item.metrics.length > 0)
-                            .map(item => ({ name: item.name, reason: item.metrics.join(', ') }))}
-                        />
-                        <ResponsiveContainer width="100%" height={400}>
-                          <RadarChart data={(() => {
-                            const selectedMats = materials.filter(m => selectedAnalyticsMaterials.includes(m['Material Name']));
-
-                            // Helper function to keep values on 0-6 scale
-                            const normalize = (value) => {
-                              if (!value) return 0;
-                              // Check for explicit N/A string
-                              if (String(value).toUpperCase().includes('N/A')) return 0;
-                              const num = parseFloat(value);
-                              if (!isNaN(num)) {
-                                return Math.max(0, Math.min(num, 6));
-                              }
-                              return 0;
-                            };
-
-                            return [
-                              { metric: 'Sustainability', ...Object.fromEntries(selectedMats.map(m => [m['Material Name'], normalize(m['Sustainability Score'])])) },
-                              { metric: 'Low GHG', ...Object.fromEntries(selectedMats.map(m => {
-                                const ghgStr = String(m['GHG Emissions (kg CO2e/kg)'] || '');
-                                // Check for N/A - return 0 (no data)
-                                if (ghgStr.toUpperCase().includes('N/A')) return [m['Material Name'], 0];
-                                const match = ghgStr.match(/[\d.]+/);
-                                const ghg = match ? parseFloat(match[0]) : 0;
-                                return [m['Material Name'], Math.max(0, Math.min(6, 7 - (ghg / 10)))];
-                              })) },
-                              { metric: 'Low Water', ...Object.fromEntries(selectedMats.map(m => {
-                                const waterStr = String(m['Water Consumption (L/kg)'] || '');
-                                // Check for N/A - return 0 (no data)
-                                if (waterStr.toUpperCase().includes('N/A')) return [m['Material Name'], 0];
-                                const match = waterStr.match(/[\d.]+/);
-                                const water = match ? parseFloat(match[0]) : 0;
-                                return [m['Material Name'], Math.max(0, Math.min(6, 7 - (water / 200)))];
-                              })) },
-                              { metric: 'Low Energy', ...Object.fromEntries(selectedMats.map(m => {
-                                const energyStr = String(m['Energy Use (MJ/kg)'] || '');
-                                // Check for N/A - return 0 (no data)
-                                if (energyStr.toUpperCase().includes('N/A')) return [m['Material Name'], 0];
-                                const match = energyStr.match(/[\d.]+/);
-                                const energy = match ? parseFloat(match[0]) : 0;
-                                return [m['Material Name'], Math.max(0, Math.min(6, 7 - (energy / 20)))];
-                              })) },
-                              { metric: 'Low Fossil Fuel', ...Object.fromEntries(selectedMats.map(m => {
-                                const fuelStr = String(m['Fuel Consumption (MJ/kg)'] || '').toLowerCase().trim();
-
-                                // Check if it's a number first
-                                const match = fuelStr.match(/[\d.]+/);
-                                if (match) {
-                                  const fuel = parseFloat(match[0]);
-                                  return [m['Material Name'], Math.max(0, Math.min(6, 7 - (fuel / 20)))];
-                                }
-
-                                // Handle qualitative values (inverted: Very High fuel = Low score)
-                                if (fuelStr.includes('veryhigh') || fuelStr.includes('very high')) return [m['Material Name'], 1];
-                                if (fuelStr.includes('high') && !fuelStr.includes('medium')) return [m['Material Name'], 2];
-                                if (fuelStr.includes('mediumhigh') || fuelStr.includes('medium-high') || fuelStr.includes('medium high')) return [m['Material Name'], 2.5];
-                                if (fuelStr.includes('medium') && !fuelStr.includes('low') && !fuelStr.includes('high')) return [m['Material Name'], 3.5];
-                                if (fuelStr.includes('mediumlow') || fuelStr.includes('medium-low') || fuelStr.includes('medium low')) return [m['Material Name'], 4.5];
-                                if (fuelStr.includes('low') && !fuelStr.includes('medium')) return [m['Material Name'], 5];
-                                if (fuelStr.includes('verylow') || fuelStr.includes('very low')) return [m['Material Name'], 6];
-
-                                return [m['Material Name'], 0];
-                              })) }
-                            ];
-                          })()}>
-                            <PolarGrid stroke="#e5e7eb" />
-                            <PolarAngleAxis dataKey="metric" tick={{ fill: '#374151', fontSize: 12 }} />
-                            <PolarRadiusAxis angle={90} domain={[0, 6]} tick={{ fill: '#6b7280', fontSize: 10 }} />
-                            {selectedAnalyticsMaterials.map((matName, idx) => (
-                              <Radar
-                                key={matName}
-                                name={matName}
-                                dataKey={matName}
-                                stroke={['#8b5cf6', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#ec4899', '#06b6d4', '#84cc16'][idx % 8]}
-                                fill={['#8b5cf6', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#ec4899', '#06b6d4', '#84cc16'][idx % 8]}
-                                fillOpacity={0.3}
-                              />
-                            ))}
-                            <Legend />
-                            <Tooltip />
-                          </RadarChart>
-                        </ResponsiveContainer>
-                      </div>
-                    )}
-                  </>
-                )}
-              </>
-            )}
-          </div>
-        )}
-
-        {activeTab === 'compare' && (
-          <div className="space-y-6">
-            {selectedMaterials.length === 0 ? (
-              <div className="bg-white rounded-xl shadow-lg p-6">
-                <h2 className="text-xl font-bold text-gray-900 mb-4">Material Comparison</h2>
-                <p className="text-gray-600">Select materials from the database to compare them here.</p>
-              </div>
-            ) : selectedMaterials.length === 1 ? (
-              <div className="bg-white rounded-xl shadow-lg p-6">
-                <h2 className="text-xl font-bold text-gray-900 mb-4">Material Comparison</h2>
-                <div className="flex items-start space-x-3 rounded-lg border border-yellow-200 bg-yellow-50 p-4 text-sm text-yellow-800">
-                  <AlertCircle className="w-5 h-5 text-yellow-500 mt-0.5 flex-shrink-0" />
-                  <div>
-                    <p className="font-medium">Only 1 material selected.</p>
-                    <p className="mt-1">Please select at least 2 materials to enable comparison.</p>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <>
-                {/* Header */}
-                <div className="bg-gradient-to-r from-blue-50 to-green-50 rounded-xl p-6 border-2 border-blue-200">
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <h2 className="text-2xl font-bold text-gray-900 mb-2">Material Comparison</h2>
-                      <p className="text-sm text-gray-600">Comparing {selectedMaterials.length} materials</p>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <button
-                        onClick={() => {
-                          const comparedMaterials = materials.filter(m => selectedMaterials.includes(m['Material Name']));
-                          exportToCSV(comparedMaterials, 'materials_comparison');
-                        }}
-                        className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
-                      >
-                        <Download className="w-4 h-4" />
-                        <span>CSV</span>
-                      </button>
-                      <button
-                        onClick={() => {
-                          const comparedMaterials = materials.filter(m => selectedMaterials.includes(m['Material Name']));
-                          exportToJSON(comparedMaterials, 'materials_comparison');
-                        }}
-                        className="flex items-center space-x-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium"
-                      >
-                        <Download className="w-4 h-4" />
-                        <span>JSON</span>
-                      </button>
-                      <button
-                        onClick={() => setSelectedMaterials([])}
-                        className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-medium"
-                      >
-                        Clear All
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Detailed Comparison Table - FIRST */}
+          {activeTab === 'compare' && (
+            <div className="space-y-6">
+              {selectedMaterials.length === 0 ? (
                 <div className="bg-white rounded-xl shadow-lg p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-xl font-bold text-gray-900">Detailed Property Comparison</h2>
-                    {selectedMaterials.length > 4 && (
-                      <div className="flex items-center space-x-2 text-blue-600 animate-pulse">
-                        <span className="text-sm font-medium">Scroll horizontally to view all materials</span>
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                        </svg>
-                      </div>
-                    )}
+                  <h2 className="text-xl font-bold text-gray-900 mb-4">Material Comparison</h2>
+                  <p className="text-gray-600">Select materials from the database to compare them here.</p>
+                </div>
+              ) : selectedMaterials.length === 1 ? (
+                <div className="bg-white rounded-xl shadow-lg p-6">
+                  <h2 className="text-xl font-bold text-gray-900 mb-4">Material Comparison</h2>
+                  <div className="flex items-start space-x-3 rounded-lg border border-yellow-200 bg-yellow-50 p-4 text-sm text-yellow-800">
+                    <AlertCircle className="w-5 h-5 text-yellow-500 mt-0.5 flex-shrink-0" />
+                    <div>
+                      <p className="font-medium">Only 1 material selected.</p>
+                      <p className="mt-1">Please select at least 2 materials to enable comparison.</p>
+                    </div>
                   </div>
-                  <div className="relative">
-                    {/* Gradient shadows for scroll indication */}
-                    {selectedMaterials.length > 4 && (
-                      <>
-                        <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-white to-transparent pointer-events-none z-10"></div>
-                        <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-white to-transparent pointer-events-none z-10"></div>
-                      </>
-                    )}
-                    <div className="overflow-x-auto pb-2" style={{
-                      scrollbarWidth: 'thin',
-                      scrollbarColor: '#10b981 #e5e7eb'
-                    }}>
-                      <style jsx>{`
+                </div>
+              ) : (
+                <>
+                  {/* Header */}
+                  <div className="bg-gradient-to-r from-blue-50 to-green-50 rounded-xl p-6 border-2 border-blue-200">
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <h2 className="text-2xl font-bold text-gray-900 mb-2">Material Comparison</h2>
+                        <p className="text-sm text-gray-600">Comparing {selectedMaterials.length} materials</p>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <button
+                          onClick={() => {
+                            const comparedMaterials = materials.filter(m => selectedMaterials.includes(m['Material Name']));
+                            exportToCSV(comparedMaterials, 'materials_comparison');
+                          }}
+                          className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+                        >
+                          <Download className="w-4 h-4" />
+                          <span>CSV</span>
+                        </button>
+                        <button
+                          onClick={() => {
+                            const comparedMaterials = materials.filter(m => selectedMaterials.includes(m['Material Name']));
+                            exportToJSON(comparedMaterials, 'materials_comparison');
+                          }}
+                          className="flex items-center space-x-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium"
+                        >
+                          <Download className="w-4 h-4" />
+                          <span>JSON</span>
+                        </button>
+                        <button
+                          onClick={() => setSelectedMaterials([])}
+                          className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-medium"
+                        >
+                          Clear All
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Detailed Comparison Table - FIRST */}
+                  <div className="bg-white rounded-xl shadow-lg p-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <h2 className="text-xl font-bold text-gray-900">Detailed Property Comparison</h2>
+                      {selectedMaterials.length > 4 && (
+                        <div className="flex items-center space-x-2 text-blue-600 animate-pulse">
+                          <span className="text-sm font-medium">Scroll horizontally to view all materials</span>
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                          </svg>
+                        </div>
+                      )}
+                    </div>
+                    <div className="relative">
+                      {/* Gradient shadows for scroll indication */}
+                      {selectedMaterials.length > 4 && (
+                        <>
+                          <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-white to-transparent pointer-events-none z-10"></div>
+                          <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-white to-transparent pointer-events-none z-10"></div>
+                        </>
+                      )}
+                      <div className="overflow-x-auto pb-2" style={{
+                        scrollbarWidth: 'thin',
+                        scrollbarColor: '#10b981 #e5e7eb'
+                      }}>
+                        <style jsx>{`
                         div::-webkit-scrollbar {
                           height: 14px;
                         }
@@ -2366,229 +2296,229 @@ const SustainableMaterialsApp = () => {
                           background: #059669;
                         }
                       `}</style>
-                    <table className={`divide-y divide-gray-200 ${selectedMaterials.length <= 4 ? 'w-full' : 'min-w-max'}`}>
-                      <thead className="bg-gray-50">
-                        <tr>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-48">Property</th>
-                          {selectedMaterials.map(materialName => (
-                            <th key={materialName} className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[200px]">
-                              <div className="flex items-center justify-between">
-                                <span>{materialName}</span>
-                                <button
-                                  onClick={() => setSelectedMaterials(prev => prev.filter(name => name !== materialName))}
-                                  className="ml-2 text-red-600 hover:text-red-800 font-bold text-lg"
-                                  title="Remove from comparison"
-                                >
-                                  ×
-                                </button>
-                              </div>
-                            </th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody className="bg-white divide-y divide-gray-200">
-                        {[
-                          'Sustainability Score',
-                          'Environmental_Sustainability',
-                          'GHG Emissions (kg CO2e/kg)',
-                          'Water Consumption (L/kg)',
-                          'Energy Use (MJ/kg)',
-                          'Social Sustainability',
-                          'Governance',
-                          'Durability',
-                          'Tensile Strength (MPa)',
-                          'Chemical Resistance',
-                          'Comfort Level'
-                        ].map(property => {
-                          // Calculate the highest Sustainability Score for highlighting
-                          let highestScore = -Infinity;
-                          if (property === 'Sustainability Score') {
-                            selectedMaterials.forEach(materialName => {
-                              const material = materials.find(m => m['Material Name'] === materialName);
-                              const score = parseFloat(material?.['Sustainability Score']) || 0;
-                              if (score > highestScore) {
-                                highestScore = score;
+                        <table className={`divide-y divide-gray-200 ${selectedMaterials.length <= 4 ? 'w-full' : 'min-w-max'}`}>
+                          <thead className="bg-gray-50">
+                            <tr>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-48">Property</th>
+                              {selectedMaterials.map(materialName => (
+                                <th key={materialName} className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[200px]">
+                                  <div className="flex items-center justify-between">
+                                    <span>{materialName}</span>
+                                    <button
+                                      onClick={() => setSelectedMaterials(prev => prev.filter(name => name !== materialName))}
+                                      className="ml-2 text-red-600 hover:text-red-800 font-bold text-lg"
+                                      title="Remove from comparison"
+                                    >
+                                      ×
+                                    </button>
+                                  </div>
+                                </th>
+                              ))}
+                            </tr>
+                          </thead>
+                          <tbody className="bg-white divide-y divide-gray-200">
+                            {[
+                              'Sustainability Score',
+                              'Environmental_Sustainability',
+                              'GHG Emissions (kg CO2e/kg)',
+                              'Water Consumption (L/kg)',
+                              'Energy Use (MJ/kg)',
+                              'Social Sustainability',
+                              'Governance',
+                              'Durability',
+                              'Tensile Strength (MPa)',
+                              'Chemical Resistance',
+                              'Comfort Level'
+                            ].map(property => {
+                              // Calculate the highest Sustainability Score for highlighting
+                              let highestScore = -Infinity;
+                              if (property === 'Sustainability Score') {
+                                selectedMaterials.forEach(materialName => {
+                                  const material = materials.find(m => m['Material Name'] === materialName);
+                                  const score = parseFloat(material?.['Sustainability Score']) || 0;
+                                  if (score > highestScore) {
+                                    highestScore = score;
+                                  }
+                                });
                               }
-                            });
+
+                              return (
+                                <tr key={property}>
+                                  <td className="px-6 py-4 text-sm font-semibold text-gray-900 w-48">{property.replace('_', ' ')}</td>
+                                  {selectedMaterials.map(materialName => {
+                                    const material = materials.find(m => m['Material Name'] === materialName);
+                                    const value = material?.[property] || 'N/A';
+
+                                    // Check if this is the highest Sustainability Score
+                                    const isHighestScore = property === 'Sustainability Score' &&
+                                      parseFloat(material?.['Sustainability Score']) === highestScore &&
+                                      highestScore > 0;
+
+                                    // Apply fixed width for Comfort Level with wrapping
+                                    const cellClass = property === 'Comfort Level'
+                                      ? 'px-6 py-4 text-sm max-w-xs'
+                                      : 'px-6 py-4 whitespace-nowrap text-sm';
+
+                                    return (
+                                      <td
+                                        key={materialName}
+                                        className={`${cellClass} ${isHighestScore ? 'bg-green-100 font-bold text-green-800' : 'text-gray-900'}`}
+                                      >
+                                        {value}
+                                      </td>
+                                    );
+                                  })}
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Radar Chart Comparison */}
+                  <div className="bg-white rounded-xl shadow-lg p-6" id="radar-comparison-chart">
+                    <div className="flex justify-between items-start mb-4">
+                      <div>
+                        <h2 className="text-xl font-bold text-gray-900">Multi-Dimensional Radar Comparison</h2>
+                        <p className="text-sm text-gray-600">Overall material profile comparison</p>
+                      </div>
+                      <ChartExportButtons
+                        chartId="radar-comparison-chart"
+                        filename="radar_comparison"
+                      />
+                    </div>
+                    <MissingDataWarning
+                      excludedMaterials={materials
+                        .filter(material => selectedMaterials.includes(material['Material Name']))
+                        .map(material => {
+                          const missingMetrics = [];
+
+                          // Only check QUANTITATIVE fields (can be N/A)
+                          const sustainability = parseFloat(material['Sustainability Score']) || 0;
+                          const sustainStr = String(material['Sustainability Score'] || '').toUpperCase();
+                          const costStr = String(material['Cost Range ($/kg)'] || '').toUpperCase();
+
+                          if (sustainability === 0 || sustainStr.includes('N/A')) {
+                            missingMetrics.push('Sustain. Score');
+                          }
+                          if (!costStr.match(/[\d.]+/) || costStr.includes('N/A')) {
+                            missingMetrics.push('Cost');
                           }
 
-                          return (
-                            <tr key={property}>
-                              <td className="px-6 py-4 text-sm font-semibold text-gray-900 w-48">{property.replace('_', ' ')}</td>
-                              {selectedMaterials.map(materialName => {
-                                const material = materials.find(m => m['Material Name'] === materialName);
-                                const value = material?.[property] || 'N/A';
+                          // QUALITATIVE fields (always present): Environmental_Sustainability, Social Sustainability,
+                          // Governance, Durability - no check needed
 
-                                // Check if this is the highest Sustainability Score
-                                const isHighestScore = property === 'Sustainability Score' &&
-                                  parseFloat(material?.['Sustainability Score']) === highestScore &&
-                                  highestScore > 0;
-
-                                // Apply fixed width for Comfort Level with wrapping
-                                const cellClass = property === 'Comfort Level'
-                                  ? 'px-6 py-4 text-sm max-w-xs'
-                                  : 'px-6 py-4 whitespace-nowrap text-sm';
-
-                                return (
-                                  <td
-                                    key={materialName}
-                                    className={`${cellClass} ${isHighestScore ? 'bg-green-100 font-bold text-green-800' : 'text-gray-900'}`}
-                                  >
-                                    {value}
-                                  </td>
-                                );
-                              })}
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Radar Chart Comparison */}
-                <div className="bg-white rounded-xl shadow-lg p-6" id="radar-comparison-chart">
-                  <div className="flex justify-between items-start mb-4">
-                    <div>
-                      <h2 className="text-xl font-bold text-gray-900">Multi-Dimensional Radar Comparison</h2>
-                      <p className="text-sm text-gray-600">Overall material profile comparison</p>
-                    </div>
-                    <ChartExportButtons
-                      chartId="radar-comparison-chart"
-                      filename="radar_comparison"
+                          return { name: material['Material Name'], metrics: missingMetrics };
+                        })
+                        .filter(item => item.metrics.length > 0)
+                        .map(item => ({ name: item.name, reason: item.metrics.join(', ') }))}
                     />
+                    <ResponsiveContainer width="100%" height={450}>
+                      <RadarChart data={(() => {
+                        const comparedMaterials = materials.filter(m => selectedMaterials.includes(m['Material Name']));
+
+                        // Helper function to normalize values to 0-6 scale
+                        const normalizeTextValue = (value) => {
+                          if (!value) return 0;
+                          const val = String(value).toLowerCase().trim();
+
+                          // Check for explicit N/A string
+                          if (val.includes('n/a')) return 0;
+
+                          // Check if it's a number (0-6 scale)
+                          const num = parseFloat(value);
+                          if (!isNaN(num)) {
+                            // Keep 0-6 scale as is
+                            return Math.max(0, Math.min(num, 6));
+                          }
+
+                          // Text-based values mapped to 0-6 scale
+                          if (val.includes('veryhigh') || val.includes('very high') || val.includes('excellent')) return 6;
+                          if (val.includes('high')) return 5;
+                          if (val.includes('mediumhigh') || val.includes('medium-high') || val.includes('medium high')) return 4.5;
+                          if (val.includes('medium') || val.includes('moderate')) return 3.5;
+                          if (val.includes('mediumlow') || val.includes('medium-low') || val.includes('medium low')) return 2.5;
+                          if (val.includes('low')) return 2;
+                          if (val.includes('verylow') || val.includes('very low') || val.includes('poor')) return 1;
+
+                          return 0;
+                        };
+
+                        return [
+                          {
+                            metric: 'Sustainability\nScore',
+                            ...Object.fromEntries(comparedMaterials.map(m => [
+                              m['Material Name'],
+                              normalizeTextValue(m['Sustainability Score'])
+                            ]))
+                          },
+                          {
+                            metric: 'Environmental\nSustainability',
+                            ...Object.fromEntries(comparedMaterials.map(m => [
+                              m['Material Name'],
+                              normalizeTextValue(m['Environmental_Sustainability'])
+                            ]))
+                          },
+                          {
+                            metric: 'Social\nSustainability',
+                            ...Object.fromEntries(comparedMaterials.map(m => [
+                              m['Material Name'],
+                              normalizeTextValue(m['Social Sustainability'])
+                            ]))
+                          },
+                          {
+                            metric: 'Governance',
+                            ...Object.fromEntries(comparedMaterials.map(m => [
+                              m['Material Name'],
+                              normalizeTextValue(m['Governance'])
+                            ]))
+                          },
+                          {
+                            metric: 'Durability',
+                            ...Object.fromEntries(comparedMaterials.map(m => [
+                              m['Material Name'],
+                              normalizeTextValue(m['Durability'])
+                            ]))
+                          },
+                          {
+                            metric: 'Cost\n(Affordability)',
+                            ...Object.fromEntries(comparedMaterials.map(m => {
+                              const costStr = String(m['Cost Range ($/kg)'] || '');
+                              // Check for N/A - return 0 (no data)
+                              if (costStr.toUpperCase().includes('N/A')) return [m['Material Name'], 0];
+                              const match = costStr.match(/[\d.]+/);
+                              const cost = match ? parseFloat(match[0]) : 0;
+                              // Invert cost: lower cost = higher score (more affordable) - scale 0-6
+                              return [m['Material Name'], cost > 0 ? Math.max(0, Math.min(6, 7 - (cost / 2))) : 0];
+                            }))
+                          }
+                        ];
+                      })()}>
+                        <PolarGrid stroke="#d1d5db" strokeDasharray="3 3" />
+                        <PolarAngleAxis dataKey="metric" tick={{ fill: '#1f2937', fontSize: 11, fontWeight: 500 }} />
+                        <PolarRadiusAxis angle={90} domain={[0, 6]} tick={{ fill: '#6b7280', fontSize: 10 }} />
+                        {selectedMaterials.map((matName, idx) => (
+                          <Radar
+                            key={matName}
+                            name={matName}
+                            dataKey={matName}
+                            stroke={['#3b82f6', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6'][idx % 5]}
+                            fill={['#3b82f6', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6'][idx % 5]}
+                            fillOpacity={0.4}
+                            strokeWidth={2}
+                          />
+                        ))}
+                        <Legend />
+                        <Tooltip />
+                      </RadarChart>
+                    </ResponsiveContainer>
                   </div>
-                  <MissingDataWarning
-                    excludedMaterials={materials
-                      .filter(material => selectedMaterials.includes(material['Material Name']))
-                      .map(material => {
-                        const missingMetrics = [];
-
-                        // Only check QUANTITATIVE fields (can be N/A)
-                        const sustainability = parseFloat(material['Sustainability Score']) || 0;
-                        const sustainStr = String(material['Sustainability Score'] || '').toUpperCase();
-                        const costStr = String(material['Cost Range ($/kg)'] || '').toUpperCase();
-
-                        if (sustainability === 0 || sustainStr.includes('N/A')) {
-                          missingMetrics.push('Sustain. Score');
-                        }
-                        if (!costStr.match(/[\d.]+/) || costStr.includes('N/A')) {
-                          missingMetrics.push('Cost');
-                        }
-
-                        // QUALITATIVE fields (always present): Environmental_Sustainability, Social Sustainability,
-                        // Governance, Durability - no check needed
-
-                        return { name: material['Material Name'], metrics: missingMetrics };
-                      })
-                      .filter(item => item.metrics.length > 0)
-                      .map(item => ({ name: item.name, reason: item.metrics.join(', ') }))}
-                  />
-                  <ResponsiveContainer width="100%" height={450}>
-                    <RadarChart data={(() => {
-                      const comparedMaterials = materials.filter(m => selectedMaterials.includes(m['Material Name']));
-
-                      // Helper function to normalize values to 0-6 scale
-                      const normalizeTextValue = (value) => {
-                        if (!value) return 0;
-                        const val = String(value).toLowerCase().trim();
-
-                        // Check for explicit N/A string
-                        if (val.includes('n/a')) return 0;
-
-                        // Check if it's a number (0-6 scale)
-                        const num = parseFloat(value);
-                        if (!isNaN(num)) {
-                          // Keep 0-6 scale as is
-                          return Math.max(0, Math.min(num, 6));
-                        }
-
-                        // Text-based values mapped to 0-6 scale
-                        if (val.includes('veryhigh') || val.includes('very high') || val.includes('excellent')) return 6;
-                        if (val.includes('high')) return 5;
-                        if (val.includes('mediumhigh') || val.includes('medium-high') || val.includes('medium high')) return 4.5;
-                        if (val.includes('medium') || val.includes('moderate')) return 3.5;
-                        if (val.includes('mediumlow') || val.includes('medium-low') || val.includes('medium low')) return 2.5;
-                        if (val.includes('low')) return 2;
-                        if (val.includes('verylow') || val.includes('very low') || val.includes('poor')) return 1;
-
-                        return 0;
-                      };
-
-                      return [
-                        {
-                          metric: 'Sustainability\nScore',
-                          ...Object.fromEntries(comparedMaterials.map(m => [
-                            m['Material Name'],
-                            normalizeTextValue(m['Sustainability Score'])
-                          ]))
-                        },
-                        {
-                          metric: 'Environmental\nSustainability',
-                          ...Object.fromEntries(comparedMaterials.map(m => [
-                            m['Material Name'],
-                            normalizeTextValue(m['Environmental_Sustainability'])
-                          ]))
-                        },
-                        {
-                          metric: 'Social\nSustainability',
-                          ...Object.fromEntries(comparedMaterials.map(m => [
-                            m['Material Name'],
-                            normalizeTextValue(m['Social Sustainability'])
-                          ]))
-                        },
-                        {
-                          metric: 'Governance',
-                          ...Object.fromEntries(comparedMaterials.map(m => [
-                            m['Material Name'],
-                            normalizeTextValue(m['Governance'])
-                          ]))
-                        },
-                        {
-                          metric: 'Durability',
-                          ...Object.fromEntries(comparedMaterials.map(m => [
-                            m['Material Name'],
-                            normalizeTextValue(m['Durability'])
-                          ]))
-                        },
-                        {
-                          metric: 'Cost\n(Affordability)',
-                          ...Object.fromEntries(comparedMaterials.map(m => {
-                            const costStr = String(m['Cost Range ($/kg)'] || '');
-                            // Check for N/A - return 0 (no data)
-                            if (costStr.toUpperCase().includes('N/A')) return [m['Material Name'], 0];
-                            const match = costStr.match(/[\d.]+/);
-                            const cost = match ? parseFloat(match[0]) : 0;
-                            // Invert cost: lower cost = higher score (more affordable) - scale 0-6
-                            return [m['Material Name'], cost > 0 ? Math.max(0, Math.min(6, 7 - (cost / 2))) : 0];
-                          }))
-                        }
-                      ];
-                    })()}>
-                      <PolarGrid stroke="#d1d5db" strokeDasharray="3 3" />
-                      <PolarAngleAxis dataKey="metric" tick={{ fill: '#1f2937', fontSize: 11, fontWeight: 500 }} />
-                      <PolarRadiusAxis angle={90} domain={[0, 6]} tick={{ fill: '#6b7280', fontSize: 10 }} />
-                      {selectedMaterials.map((matName, idx) => (
-                        <Radar
-                          key={matName}
-                          name={matName}
-                          dataKey={matName}
-                          stroke={['#3b82f6', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6'][idx % 5]}
-                          fill={['#3b82f6', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6'][idx % 5]}
-                          fillOpacity={0.4}
-                          strokeWidth={2}
-                        />
-                      ))}
-                      <Legend />
-                      <Tooltip />
-                    </RadarChart>
-                  </ResponsiveContainer>
-                </div>
-              </>
-            )}
-          </div>
-        )}
+                </>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Footer */}
