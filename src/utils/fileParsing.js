@@ -169,6 +169,11 @@ export const parseSQLFile = (content) => {
     const materials = [];
     let columns = [];
 
+    const insertCount = (content.match(/INSERT\s+INTO\s+\w+/gi) || []).length;
+    if (insertCount > 1) {
+        console.warn('SQL contains multiple INSERT statements; parser handles simple cases only.');
+    }
+
     const createTableMatch = content.match(/CREATE\s+TABLE\s+\w+\s*\(([\s\S]*?)\);/i);
     if (createTableMatch) {
         const columnDefs = createTableMatch[1];
@@ -221,6 +226,10 @@ export const parseSQLFile = (content) => {
             material[normalizeColumnName(column)] = values[index] || '';
         });
         materials.push(material);
+    }
+
+    if (insertCount > 1 && materials.length === 0) {
+        throw new Error('SQL file appears complex (multiple INSERTs). Please export as CSV for best results.');
     }
 
     return materials;

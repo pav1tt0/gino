@@ -88,13 +88,6 @@ npm run preview
 ```
 Preview the production build locally before deployment
 
-### Test
-
-```bash
-npm test
-```
-Runs the test suite using Vitest
-
 ## 🏗️ Tech Stack
 
 | Technology | Version | Purpose |

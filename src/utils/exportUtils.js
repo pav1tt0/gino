@@ -16,8 +16,13 @@ export const exportToCSV = (data, filename) => {
     const csvRows = data.map(item =>
         keys.map(key => {
             const value = item[key] || '';
+            let safeValue = String(value);
+            // Prevent CSV formula injection in Excel/Sheets
+            if (/^\s*[=+\-@]/.test(safeValue)) {
+                safeValue = `'${safeValue}`;
+            }
             // Escape commas and quotes in values
-            const escaped = String(value).replace(/"/g, '""');
+            const escaped = safeValue.replace(/"/g, '""');
             return `"${escaped}"`;
         }).join(',')
     );

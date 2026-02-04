@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
-import { RefreshCw, Database, Download } from 'lucide-react';
+import { RefreshCw } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 
 import { fetchMaterialsFromSupabase, supabaseConfigOk } from './supabaseClient';
@@ -59,7 +59,6 @@ const SustainableMaterialsApp = () => {
         if (data && data.length > 0) {
           setSupabaseMaterials(data);
           setMaterials(data);
-          toast.success(`Loaded ${data.length} materials from Supabase`);
         } else {
           toast.error('No materials found in Supabase');
         }
@@ -162,10 +161,27 @@ const SustainableMaterialsApp = () => {
           parsedMaterials = parseSQLFile(fileContent);
         }
 
+        // Limit rows/columns to avoid freezing the UI
+        const maxRows = 5000;
+        const maxColumns = 80;
         if (parsedMaterials.length === 0) {
           toast.error('No data found in the file. Please check the file format.', { id: 'file-upload' });
           setLoading(false);
           return;
+        }
+
+        if (parsedMaterials.length > maxRows) {
+          throw new Error(`File too large: ${parsedMaterials.length} rows. Max allowed is ${maxRows}.`);
+        }
+        const columnCount = Object.keys(parsedMaterials[0]).length;
+        if (columnCount > maxColumns) {
+          throw new Error(`Too many columns: ${columnCount}. Max allowed is ${maxColumns}.`);
+        }
+
+        const hasRequiredId = parsedMaterials.some(row => (row['Material Name'] || '').toString().trim()) ||
+          parsedMaterials.some(row => (row['Material ID'] || '').toString().trim());
+        if (!hasRequiredId) {
+          throw new Error('Missing required column: Material Name or Material ID.');
         }
 
         // SHOW PREVIEW instead of importing directly

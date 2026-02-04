@@ -28,16 +28,17 @@ const ChartExportButtons = ({ chartRef, chartId, filename }) => {
         }
         setIsExporting(true);
         try {
+            const scale = Math.min(3, window.devicePixelRatio || 2);
             const canvas = await html2canvas(element, {
                 backgroundColor: '#ffffff',
-                scale: 1,
+                scale,
                 logging: false,
                 useCORS: true,
                 allowTaint: false
             });
             const link = document.createElement('a');
             link.download = `${filename}.png`;
-            link.href = canvas.toDataURL('image/png');
+            link.href = canvas.toDataURL('image/png', 1.0);
             link.click();
             toast.success('Chart exported as PNG!');
         } catch (error) {
@@ -57,9 +58,10 @@ const ChartExportButtons = ({ chartRef, chartId, filename }) => {
         }
         setIsExporting(true);
         try {
+            const scale = Math.min(3, window.devicePixelRatio || 2);
             const canvas = await html2canvas(element, {
                 backgroundColor: '#ffffff',
-                scale: 1,
+                scale,
                 logging: false,
                 useCORS: true,
                 allowTaint: false
